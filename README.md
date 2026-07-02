@@ -2,6 +2,12 @@
 
 **The piggy bank you can only crack once.**
 
+## Live (devnet)
+- **App:** https://pitbull-mu.vercel.app
+- **Backend API:** https://pitbull-server-production.up.railway.app (see [`server/`](server/))
+- Deposit → detect → credit → sweep → owner-only withdraw all run on **devnet**.
+  Mainnet is gated (audit + legal + key custody); the $ANSEM LP step is disabled.
+
 A stunning, production-grade frontend for **PIT-BULL** (a.k.a. *Black Bull Piggy
 Vault*) — the social piggy-bank liquidity protocol on Solana described in the
 assignment brief. Users sign in with X, open one piggy bank, fill it with small
