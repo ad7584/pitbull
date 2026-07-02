@@ -26,16 +26,19 @@ function loadOrCreate(file, make) {
   return val;
 }
 
-// 32-byte master seed (hex), persisted once to .secrets/ (gitignored).
-const masterSeedHex = loadOrCreate("master-seed.json", () =>
-  crypto.randomBytes(32).toString("hex"),
-);
+// Secrets resolve from ENV first (production/Railway — stable across restarts),
+// else a local .secrets/ file (dev). On ephemeral hosts, regenerating these
+// would orphan every deposit address, so the env path is mandatory in prod.
+const masterSeedHex =
+  process.env.MASTER_SEED_HEX ||
+  loadOrCreate("master-seed.json", () => crypto.randomBytes(32).toString("hex"));
 const MASTER_SEED = Buffer.from(masterSeedHex, "hex");
 
 // The single operational keeper wallet: receives swept deposits, provides LP.
-const keeperSecret = loadOrCreate("keeper.json", () =>
-  Array.from(Keypair.generate().secretKey),
-);
+// KEEPER_SECRET_KEY = JSON array of the 64-byte secret key.
+const keeperSecret = process.env.KEEPER_SECRET_KEY
+  ? JSON.parse(process.env.KEEPER_SECRET_KEY)
+  : loadOrCreate("keeper.json", () => Array.from(Keypair.generate().secretKey));
 export const keeper = Keypair.fromSecretKey(Uint8Array.from(keeperSecret));
 
 /** Deterministic, re-derivable deposit keypair for a user (used to sweep). */
