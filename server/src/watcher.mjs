@@ -1,26 +1,23 @@
-// Deposit watcher: polls each user's deposit address for new inbound SOL and
-// credits the shared ledger — idempotent per on-chain signature. Runs inside
-// the server process on an interval. Devnet.
-//
-// `last_sig` is the scan cursor (newest signature seen). The `deposits` table
-// (sig primary key) guarantees a transfer is credited at most once, so a re-scan
-// is always safe.
+// Deposit watcher: polls each user's deposit address for new inbound SOL,
+// credits the shared ledger (idempotent per signature), then sweeps the
+// balance into the single keeper wallet — the "single wallet of us" that holds
+// pooled funds and pays withdrawals. Devnet.
 import { Connection, PublicKey } from "@solana/web3.js";
 import { RPC_URL } from "./config.mjs";
 import { creditDeposit, listUsers, setLastSig } from "./ledger.mjs";
+import { depositKeypairFor, keeper } from "./wallets.mjs";
+import { sweepToKeeper } from "./solana-tx.mjs";
 
 const connection = new Connection(RPC_URL, "confirmed");
 
-async function scanUser(u) {
+async function creditNewDeposits(u) {
   const pubkey = new PublicKey(u.depositAddress);
   const sigs = await connection.getSignaturesForAddress(pubkey, {
     until: u.lastSig || undefined,
     limit: 25,
   });
   if (!sigs.length) return;
-
   const newest = sigs[0].signature;
-  // oldest-first so deposits apply to share math in chronological order
   for (const s of [...sigs].reverse()) {
     if (s.err) continue;
     const tx = await connection.getParsedTransaction(s.signature, {
@@ -39,13 +36,25 @@ async function scanUser(u) {
   await setLastSig(u.userId, newest);
 }
 
+async function sweep(u) {
+  try {
+    const sw = await sweepToKeeper(depositKeypairFor(u.userId), keeper.publicKey);
+    if (sw.swept > 0) console.log(`[watcher] swept ${sw.swept} lamports → keeper (${sw.sig.slice(0, 8)}…)`);
+  } catch (e) {
+    console.error(`[watcher] sweep failed for ${u.userId}:`, e.message);
+  }
+}
+
 export function startWatcher({ intervalMs = 15000 } = {}) {
   let running = false;
   const tick = async () => {
-    if (running) return; // never overlap scans
+    if (running) return;
     running = true;
     try {
-      for (const u of await listUsers()) await scanUser(u);
+      for (const u of await listUsers()) {
+        await creditNewDeposits(u);
+        await sweep(u); // also drains any prior, already-credited balance
+      }
     } catch (e) {
       console.error("[watcher]", e.message);
     } finally {

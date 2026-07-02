@@ -46,4 +46,10 @@ export const api = {
     }),
   balance: (userId: string) => req<Balance>(`/balance/${encodeURIComponent(userId)}`),
   pool: () => req<PoolState>("/pool"),
+  /** Owner-only withdrawal to a destination address. */
+  withdraw: (body: { userId: string; destination: string; lamports?: number; authToken?: string }) =>
+    req<{ ok: boolean; sig: string; lamports: number; redeemableAfter: number }>("/withdraw", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };

@@ -96,3 +96,47 @@ export async function creditDeposit(userId, lamports, sig) {
     client.release();
   }
 }
+
+/** Lamports a user can currently redeem = their share slice of the pool. */
+export async function redeemableFor(userId) {
+  const u = await getUser(userId);
+  const p = await getPool();
+  if (!u || p.totalShares === 0) return 0;
+  return Math.floor((u.shares / p.totalShares) * p.pendingLamports);
+}
+
+/**
+ * Burn the user's shares proportional to the withdrawn amount and decrement the
+ * pool — atomic, row-locked so concurrent withdrawals can't over-draw. Caller
+ * pays out the SOL AFTER this returns (burn-first: a failed payout leaves funds
+ * recoverable by the operator rather than allowing a double-withdraw).
+ */
+export async function applyWithdrawal(userId, lamports) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const ps = await client.query(
+      "select pending_lamports, total_shares from pool_state where id=1 for update",
+    );
+    const pending = Number(ps.rows[0].pending_lamports);
+    const totalShares = Number(ps.rows[0].total_shares);
+    const ur = await client.query("select shares from users where user_id=$1 for update", [userId]);
+    if (!ur.rows[0]) throw new Error("unknown user");
+    const userShares = Number(ur.rows[0].shares);
+    const redeemable = totalShares === 0 ? 0 : (userShares / totalShares) * pending;
+    if (lamports > Math.floor(redeemable)) throw new Error("exceeds redeemable balance");
+    const burnShares = redeemable <= 0 ? 0 : userShares * (lamports / redeemable);
+    await client.query("update users set shares = shares - $1 where user_id=$2", [burnShares, userId]);
+    await client.query(
+      "update pool_state set pending_lamports = pending_lamports - $1, total_shares = total_shares - $2 where id=1",
+      [lamports, burnShares],
+    );
+    await client.query("commit");
+    return { burnShares };
+  } catch (e) {
+    await client.query("rollback");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
