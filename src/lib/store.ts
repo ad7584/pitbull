@@ -66,6 +66,8 @@ interface PitState {
 
   // auth (Privy: X login → embedded wallet)
   signInWithX: (handle?: string) => void;
+  /** called by PrivyBridge once real auth + embedded wallet are ready. */
+  setConnectedFromPrivy: (handle: string, pubkey: string) => void;
   signOut: () => void;
 
   // program actions
@@ -124,6 +126,18 @@ export const usePit = create<PitState>((set, get) => ({
       },
     });
     get().pushToast({ title: "Signed in with X", desc: "Privy embedded wallet ready — self-custodial, keys stay yours.", tone: "success" });
+  },
+  setConnectedFromPrivy: (handle, pubkey) => {
+    const cur = get().auth;
+    // avoid redundant updates on Privy's re-renders
+    if (cur.status === "connected" && cur.pubkey === pubkey) return;
+    const h = handle.trim() || "anon";
+    set({ auth: { status: "connected", handle: h, displayName: h, pubkey } });
+    get().pushToast({
+      title: "Wallet ready",
+      desc: "Privy embedded wallet connected — self-custodial, keys stay yours.",
+      tone: "success",
+    });
   },
   signOut: () =>
     set({ auth: { status: "guest", handle: "", displayName: "", pubkey: "" } }),

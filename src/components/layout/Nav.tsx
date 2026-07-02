@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Menu, PiggyBank, Trophy, Volume2, VolumeX, Wallet, X } from "lucide-react";
+import { ChevronDown, Loader2, LogOut, Menu, PiggyBank, Trophy, Volume2, VolumeX, Wallet, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar } from "@/components/ui/Avatar";
@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { usePit } from "@/lib/store";
 import { useUI } from "@/lib/ui";
-import { shortKey } from "@/lib/format";
+import { shortKey, fmtSol, fmtCompact } from "@/lib/format";
+import { isConfigured } from "@/lib/env";
+import { authBridge } from "@/lib/authBridge";
+import { useWalletBalances } from "@/lib/useWalletBalances";
 import { cn } from "@/lib/cn";
 
 const LINKS = [
@@ -20,6 +23,11 @@ export function Nav() {
   const signOut = usePit((s) => s.signOut);
   const myPen = usePit((s) => s.myPen());
   const { openSignIn, soundOn, toggleSound } = useUI();
+  const { balances, loading: balLoading } = useWalletBalances(auth.pubkey || undefined);
+
+  // real Privy in configured mode, mock modal otherwise
+  const connect = () => (isConfigured ? authBridge.login() : openSignIn());
+  const disconnect = () => (isConfigured ? authBridge.logout() : signOut());
   const nav = useNavigate();
   const loc = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -94,7 +102,7 @@ export function Nav() {
           </button>
 
           {auth.status === "guest" ? (
-            <Button size="sm" variant="primary" onClick={openSignIn}>
+            <Button size="sm" variant="primary" onClick={connect}>
               <Wallet className="h-4 w-4" />
               Connect
             </Button>
@@ -123,13 +131,19 @@ export function Nav() {
                       <div className="text-sm font-semibold">@{auth.handle}</div>
                       <div className="mt-0.5 font-mono text-xs text-mute">{shortKey(auth.pubkey, 6)}</div>
                     </div>
+                    {isConfigured && (
+                      <div className="mx-1.5 mb-1 grid grid-cols-2 gap-1.5">
+                        <BalanceChip label="SOL" value={balances ? fmtSol(balances.sol * 1e9) : null} loading={balLoading && !balances} />
+                        <BalanceChip label="ANSEM" value={balances ? fmtCompact(balances.ansem) : null} loading={balLoading && !balances} />
+                      </div>
+                    )}
                     <div className="divider my-1" />
                     <MenuItem
                       icon={PiggyBank}
                       label={myPen ? "My piggy bank" : "Open a piggy bank"}
                       onClick={() => nav(myPen ? "/dashboard" : "/create")}
                     />
-                    <MenuItem icon={LogOut} label="Sign out" onClick={signOut} danger />
+                    <MenuItem icon={LogOut} label="Sign out" onClick={disconnect} danger />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -161,7 +175,7 @@ export function Nav() {
               ))}
               <button
                 onClick={() => {
-                  if (auth.status === "guest") openSignIn();
+                  if (auth.status === "guest") connect();
                   else nav(myPen ? "/dashboard" : "/create");
                 }}
                 className="mt-1 flex items-center gap-2.5 rounded-xl bg-piggy/15 px-3 py-3 text-sm font-semibold text-piggy-300 transition hover:bg-piggy/25"
@@ -174,6 +188,17 @@ export function Nav() {
         )}
       </AnimatePresence>
     </header>
+  );
+}
+
+function BalanceChip({ label, value, loading }: { label: string; value: string | null; loading: boolean }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+      <div className="text-[10px] font-medium uppercase tracking-wide text-faint">{label}</div>
+      <div className="mt-0.5 font-mono text-sm font-semibold tnum text-paper">
+        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-mute" /> : (value ?? "—")}
+      </div>
+    </div>
   );
 }
 
