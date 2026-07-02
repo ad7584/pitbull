@@ -6,10 +6,26 @@
 // devnet, and it moves REAL funds — so it stays DISABLED. Enabling it requires
 // an audit, legal review, and secure key custody. It is never a default.
 import { ANSEM_MINT, CLUSTER, CRANK_THRESHOLD_LAMPORTS } from "./config.mjs";
-import { getPool } from "./ledger.mjs";
+import { getPool, setLpValue } from "./ledger.mjs";
 import { keeper } from "./wallets.mjs";
 import { balanceOf } from "./solana-tx.mjs";
-import { getPoolState, mainnetConnection, provideLiquidity as lpProvide } from "./lp.mjs";
+import { getPoolState, lpValueLamports, mainnetConnection, provideLiquidity as lpProvide } from "./lp.mjs";
+
+/**
+ * Recompute the SOL value of the vault's LP position from the live pool and
+ * cache it in the ledger so share math (pooledValue) includes it. Call after LP
+ * ops and periodically. With lp_tokens = 0 this just writes 0.
+ */
+export async function refreshLpValue() {
+  const p = await getPool();
+  if (!p.lpTokens || p.lpTokens <= 0) {
+    await setLpValue(0);
+    return 0;
+  }
+  const v = lpValueLamports(p.lpTokens, await getPoolState(mainnetConnection()));
+  await setLpValue(v);
+  return v;
+}
 
 export async function keeperStatus() {
   const pool = await getPool();

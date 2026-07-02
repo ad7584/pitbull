@@ -3,19 +3,13 @@
 import { pool, query } from "./db.mjs";
 
 /**
- * Total value backing shares = liquid SOL held + the value of any LP positions.
- * LP is disabled (lp_tokens must be 0). If it's ever non-zero without reserve
- * valuation wired, fail LOUD rather than silently mis-price shares (audit #7).
- * When LP is enabled, replace the throw with:
- *   pendingLamports + lpValueLamports(lpTokens, liveReserves)  // see engine.ts
+ * Total value backing shares = liquid SOL held + the SOL value of the vault's LP
+ * position (cached in pool_state.lp_value_lamports, refreshed by the keeper via
+ * lp.lpValueLamports). Audit #7: share mint/redeem now include LP value, so
+ * enabling LP can't silently mis-price shares.
  */
-function pooledValue(pendingLamports, lpTokens) {
-  if (lpTokens && lpTokens > 0) {
-    throw new Error(
-      "LP valuation not configured: cannot price lp_tokens. Wire reserve valuation before enabling LP (audit #7).",
-    );
-  }
-  return pendingLamports;
+function pooledValue(pendingLamports, lpValueLamports) {
+  return pendingLamports + (lpValueLamports || 0);
 }
 
 function mapUser(row) {
@@ -58,14 +52,20 @@ export async function setLastSig(userId, sig) {
 
 export async function getPool() {
   const r = await query(
-    "select pending_lamports, lp_tokens, total_shares from pool_state where id=1",
+    "select pending_lamports, lp_tokens, lp_value_lamports, total_shares from pool_state where id=1",
   );
-  const row = r.rows[0] ?? { pending_lamports: 0, lp_tokens: 0, total_shares: 0 };
+  const row = r.rows[0] ?? { pending_lamports: 0, lp_tokens: 0, lp_value_lamports: 0, total_shares: 0 };
   return {
     pendingLamports: Number(row.pending_lamports),
     lpTokens: Number(row.lp_tokens),
+    lpValueLamports: Number(row.lp_value_lamports),
     totalShares: Number(row.total_shares),
   };
+}
+
+/** Keeper writes the current SOL value of the vault's LP position here. */
+export async function setLpValue(lamports) {
+  await query("update pool_state set lp_value_lamports=$1 where id=1", [Math.floor(lamports)]);
 }
 
 /**
@@ -84,9 +84,9 @@ export async function creditDeposit(userId, lamports, sig) {
       return { skipped: true };
     }
     const ps = await client.query(
-      "select pending_lamports, lp_tokens, total_shares from pool_state where id=1 for update",
+      "select pending_lamports, lp_value_lamports, total_shares from pool_state where id=1 for update",
     );
-    const value = pooledValue(Number(ps.rows[0].pending_lamports), Number(ps.rows[0].lp_tokens));
+    const value = pooledValue(Number(ps.rows[0].pending_lamports), Number(ps.rows[0].lp_value_lamports));
     const totalShares = Number(ps.rows[0].total_shares);
     const minted = totalShares === 0 || value === 0 ? lamports : (lamports * totalShares) / value;
 
@@ -118,7 +118,7 @@ export async function redeemableFor(userId) {
   const u = await getUser(userId);
   const p = await getPool();
   if (!u || p.totalShares === 0) return 0;
-  return Math.floor((u.shares / p.totalShares) * pooledValue(p.pendingLamports, p.lpTokens));
+  return Math.floor((u.shares / p.totalShares) * pooledValue(p.pendingLamports, p.lpValueLamports));
 }
 
 /**
@@ -132,9 +132,9 @@ export async function applyWithdrawal(userId, lamports, destination) {
   try {
     await client.query("begin");
     const ps = await client.query(
-      "select pending_lamports, lp_tokens, total_shares from pool_state where id=1 for update",
+      "select pending_lamports, lp_value_lamports, total_shares from pool_state where id=1 for update",
     );
-    const value = pooledValue(Number(ps.rows[0].pending_lamports), Number(ps.rows[0].lp_tokens));
+    const value = pooledValue(Number(ps.rows[0].pending_lamports), Number(ps.rows[0].lp_value_lamports));
     const totalShares = Number(ps.rows[0].total_shares);
     const ur = await client.query("select shares from users where user_id=$1 for update", [userId]);
     if (!ur.rows[0]) throw new Error("unknown user");

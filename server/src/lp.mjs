@@ -77,6 +77,43 @@ export async function buildDepositTx(connection, keeperPubkey, baseAmountAnsem) 
   return { tx: new VersionedTransaction(msg), lpToken: lpToken.toString(), quoteNeeded: quote.toString() };
 }
 
+/** Build a swap tx: buy $ANSEM with `solLamports` of SOL (the base for the LP). */
+export async function buildBuyTx(connection, keeperPubkey, solLamports) {
+  const online = new OnlinePumpAmmSdk(connection);
+  const offline = new PumpAmmSdk();
+  const state = await online.swapSolanaState(ANSEM_POOL, keeperPubkey);
+  const ixs = await offline.buyQuoteInput(state, new BN(solLamports.toString()), SLIPPAGE_PCT);
+  const { blockhash } = await connection.getLatestBlockhash();
+  const msg = new TransactionMessage({
+    payerKey: keeperPubkey,
+    recentBlockhash: blockhash,
+    instructions: ixs,
+  }).compileToV0Message();
+  return new VersionedTransaction(msg);
+}
+
+/**
+ * Full flow from pooled SOL: buy ~half → $ANSEM, then deposit both legs.
+ * SIMULATE-ONLY by default (dry-runs the buy leg against mainnet, no funds).
+ * The atomic live buy→deposit is hard-gated and must not run before an audit +
+ * a funded fork test (see lp-forktest.md).
+ */
+export async function provideLiquidityFromSol(keeper, solLamports, { live = false } = {}) {
+  const connection = mainnetConnection();
+  const half = Math.floor(solLamports / 2);
+  if (!live) {
+    const buyTx = await buildBuyTx(connection, keeper.publicKey, half);
+    const sim = await connection.simulateTransaction(buyTx, { sigVerify: false, replaceRecentBlockhash: true });
+    return { simulated: true, phase: "buy", solInLamports: half, err: sim.value.err, unitsConsumed: sim.value.unitsConsumed };
+  }
+  if (process.env.LP_LIVE_ENABLED !== "true") {
+    throw new Error("LP live execution disabled. Enable only after audit + funded fork test + staged rollout.");
+  }
+  // Live buy→deposit is intentionally NOT wired to execute in this build — it is
+  // the audited step. Implement per lp-forktest.md, gated behind LP_LIVE_ENABLED.
+  throw new Error("Live LP-from-SOL execution not enabled in this build.");
+}
+
 /** Dry-run a deposit against mainnet — no funds, no signature. */
 export async function simulateDeposit(connection, keeperPubkey, baseAmountAnsem) {
   const { tx, lpToken, quoteNeeded } = await buildDepositTx(connection, keeperPubkey, baseAmountAnsem);

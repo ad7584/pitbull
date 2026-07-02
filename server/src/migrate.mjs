@@ -19,6 +19,9 @@ create table if not exists pool_state (
   total_shares     numeric not null default 0
 );
 insert into pool_state (id) values (1) on conflict (id) do nothing;
+-- cached SOL value of the vault's LP position (refreshed by the keeper), so the
+-- share math can value LP without a live RPC call inside a DB transaction (#7).
+alter table pool_state add column if not exists lp_value_lamports bigint not null default 0;
 
 -- processed deposits, for idempotent crediting (one row per on-chain sig)
 create table if not exists deposits (
