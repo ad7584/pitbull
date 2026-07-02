@@ -10,6 +10,10 @@ export const RPC_URL =
   process.env.PITBULL_RPC_URL ||
   (CLUSTER === "mainnet-beta" ? clusterApiUrl("mainnet-beta") : clusterApiUrl("devnet"));
 
+// Mainnet is determined by the ACTUAL chain funds move on (the RPC target), not
+// just the PITBULL_CLUSTER label — the two must never disagree for a safety gate.
+export const IS_MAINNET = CLUSTER === "mainnet-beta" || /mainnet/i.test(RPC_URL);
+
 export const LAMPORTS_PER_SOL = 1_000_000_000;
 
 // Provide LP once pending deposits cross this — matches the frontend (10 SOL).

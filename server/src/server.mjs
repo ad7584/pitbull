@@ -4,17 +4,33 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { Connection } from "@solana/web3.js";
-import { CLUSTER, PORT, RPC_URL } from "./config.mjs";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { CLUSTER, IS_MAINNET, PORT, RPC_URL } from "./config.mjs";
 import { depositKeypairFor, keeper } from "./wallets.mjs";
 import { applyWithdrawal, ensureUser, getPool, getUser, redeemableFor } from "./ledger.mjs";
 import { startWatcher } from "./watcher.mjs";
 import { authorizeWithdraw } from "./auth.mjs";
 import { keeperStatus } from "./keeper.mjs";
-import { payout } from "./solana-tx.mjs";
+import { balanceOf, FEE, payout } from "./solana-tx.mjs";
+
+// ---- fail-closed on mainnet misconfiguration ----
+if (IS_MAINNET && !process.env.PRIVY_APP_ID) {
+  throw new Error("PRIVY_APP_ID is required on mainnet (owner-only withdrawal auth).");
+}
+if (IS_MAINNET && process.env.ALLOW_INSECURE_WITHDRAW === "true") {
+  throw new Error("ALLOW_INSECURE_WITHDRAW must never be true on mainnet.");
+}
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (IS_MAINNET && CORS_ORIGINS.length === 0) {
+  throw new Error("CORS_ORIGINS allowlist is required on mainnet (fail-closed).");
+}
 
 const app = express();
-app.use(cors()); // prototype: allow all origins (restrict before mainnet)
+// dev: reflect all origins; mainnet: strict allowlist (enforced above).
+app.use(cors(CORS_ORIGINS.length ? { origin: CORS_ORIGINS } : undefined));
 app.use(express.json());
 export const connection = new Connection(RPC_URL, "confirmed");
 
@@ -73,13 +89,28 @@ app.post("/withdraw", async (req, res) => {
   try {
     const { userId, destination, lamports, authToken } = req.body || {};
     if (!userId || !destination) return res.status(400).json({ error: "userId + destination required" });
+    try {
+      new PublicKey(destination); // reject junk before moving funds
+    } catch {
+      return res.status(400).json({ error: "invalid destination address" });
+    }
 
     const auth = await authorizeWithdraw(userId, authToken);
     if (!auth.ok) return res.status(401).json({ error: auth.reason });
 
     const redeemable = await redeemableFor(userId);
-    const amount = Math.min(Number(lamports) || redeemable, redeemable);
+    // integer lamports only (bigint column); floor client input, cap at redeemable
+    const requested = lamports == null ? redeemable : Math.floor(Number(lamports));
+    if (!Number.isFinite(requested) || requested <= 0) return res.status(400).json({ error: "invalid amount" });
+    const amount = Math.min(requested, redeemable);
     if (amount <= 0) return res.status(400).json({ error: "nothing to withdraw" });
+
+    // solvency guard: the keeper must actually hold amount + fee BEFORE we burn
+    // shares, so a burn can never happen without a payout that will succeed.
+    const keeperBal = await balanceOf(keeper.publicKey.toBase58());
+    if (keeperBal < amount + FEE) {
+      return res.status(409).json({ error: "insufficient pool liquidity right now — try a smaller amount or later" });
+    }
 
     await applyWithdrawal(userId, amount); // burn shares first (locks; no double-draw)
     try {

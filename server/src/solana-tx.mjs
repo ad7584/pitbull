@@ -15,7 +15,7 @@ export const connection = new Connection(RPC_URL, "confirmed");
 // A bare SOL account must retain the rent-exempt minimum or it's reaped, so a
 // deposit address can never be swept fully to zero.
 const RENT_EXEMPT_MIN = 890_880;
-const FEE = 5_000;
+export const FEE = 5_000;
 
 /** Sweep a deposit address into the keeper (leaves rent + fee). */
 export async function sweepToKeeper(depositKeypair, keeperPubkey) {

@@ -6,7 +6,7 @@
 // requests are allowed WITHOUT a token so the flow can be tested end-to-end
 // without completing OAuth. This is INSECURE and must be OFF for anything real.
 import { createRemoteJWKSet, jwtVerify } from "jose";
-import { CLUSTER } from "./config.mjs";
+import { IS_MAINNET } from "./config.mjs";
 
 const APP_ID = process.env.PRIVY_APP_ID || "";
 const JWKS = APP_ID
@@ -31,7 +31,9 @@ export async function authorizeWithdraw(userId, authToken) {
     }
   }
 
-  if (CLUSTER !== "mainnet-beta" && process.env.ALLOW_INSECURE_WITHDRAW === "true") {
+  // Insecure fallback is gated on the ACTUAL chain (RPC target), so it can never
+  // fire against mainnet even if PITBULL_CLUSTER is mislabeled.
+  if (!IS_MAINNET && process.env.ALLOW_INSECURE_WITHDRAW === "true") {
     console.warn(`[auth] ⚠️ INSECURE devnet withdraw (no token) for ${userId}`);
     return { ok: true };
   }
