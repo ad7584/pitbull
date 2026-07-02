@@ -2,6 +2,22 @@
 // pool state live here — one source of truth across all users and restarts.
 import { pool, query } from "./db.mjs";
 
+/**
+ * Total value backing shares = liquid SOL held + the value of any LP positions.
+ * LP is disabled (lp_tokens must be 0). If it's ever non-zero without reserve
+ * valuation wired, fail LOUD rather than silently mis-price shares (audit #7).
+ * When LP is enabled, replace the throw with:
+ *   pendingLamports + lpValueLamports(lpTokens, liveReserves)  // see engine.ts
+ */
+function pooledValue(pendingLamports, lpTokens) {
+  if (lpTokens && lpTokens > 0) {
+    throw new Error(
+      "LP valuation not configured: cannot price lp_tokens. Wire reserve valuation before enabling LP (audit #7).",
+    );
+  }
+  return pendingLamports;
+}
+
 function mapUser(row) {
   return {
     userId: row.user_id,
@@ -68,9 +84,9 @@ export async function creditDeposit(userId, lamports, sig) {
       return { skipped: true };
     }
     const ps = await client.query(
-      "select pending_lamports, total_shares from pool_state where id=1 for update",
+      "select pending_lamports, lp_tokens, total_shares from pool_state where id=1 for update",
     );
-    const value = Number(ps.rows[0].pending_lamports);
+    const value = pooledValue(Number(ps.rows[0].pending_lamports), Number(ps.rows[0].lp_tokens));
     const totalShares = Number(ps.rows[0].total_shares);
     const minted = totalShares === 0 || value === 0 ? lamports : (lamports * totalShares) / value;
 
@@ -97,12 +113,12 @@ export async function creditDeposit(userId, lamports, sig) {
   }
 }
 
-/** Lamports a user can currently redeem = their share slice of the pool. */
+/** Lamports a user can currently redeem = their share slice of the pool value. */
 export async function redeemableFor(userId) {
   const u = await getUser(userId);
   const p = await getPool();
   if (!u || p.totalShares === 0) return 0;
-  return Math.floor((u.shares / p.totalShares) * p.pendingLamports);
+  return Math.floor((u.shares / p.totalShares) * pooledValue(p.pendingLamports, p.lpTokens));
 }
 
 /**
@@ -111,19 +127,19 @@ export async function redeemableFor(userId) {
  * pays out the SOL AFTER this returns (burn-first: a failed payout leaves funds
  * recoverable by the operator rather than allowing a double-withdraw).
  */
-export async function applyWithdrawal(userId, lamports) {
+export async function applyWithdrawal(userId, lamports, destination) {
   const client = await pool.connect();
   try {
     await client.query("begin");
     const ps = await client.query(
-      "select pending_lamports, total_shares from pool_state where id=1 for update",
+      "select pending_lamports, lp_tokens, total_shares from pool_state where id=1 for update",
     );
-    const pending = Number(ps.rows[0].pending_lamports);
+    const value = pooledValue(Number(ps.rows[0].pending_lamports), Number(ps.rows[0].lp_tokens));
     const totalShares = Number(ps.rows[0].total_shares);
     const ur = await client.query("select shares from users where user_id=$1 for update", [userId]);
     if (!ur.rows[0]) throw new Error("unknown user");
     const userShares = Number(ur.rows[0].shares);
-    const redeemable = totalShares === 0 ? 0 : (userShares / totalShares) * pending;
+    const redeemable = totalShares === 0 ? 0 : (userShares / totalShares) * value;
     if (lamports > Math.floor(redeemable)) throw new Error("exceeds redeemable balance");
     const burnShares = redeemable <= 0 ? 0 : userShares * (lamports / redeemable);
     await client.query("update users set shares = shares - $1 where user_id=$2", [burnShares, userId]);
@@ -131,12 +147,42 @@ export async function applyWithdrawal(userId, lamports) {
       "update pool_state set pending_lamports = pending_lamports - $1, total_shares = total_shares - $2 where id=1",
       [lamports, burnShares],
     );
+    // Record the withdrawal (pending) in the SAME tx as the burn, so a failed
+    // payout is always recoverable from the DB — never a silent burned-unpaid.
+    const wr = await client.query(
+      "insert into withdrawals (user_id, destination, lamports, status) values ($1,$2,$3,'pending') returning id",
+      [userId, destination, lamports],
+    );
     await client.query("commit");
-    return { burnShares };
+    return { burnShares, withdrawalId: wr.rows[0].id };
   } catch (e) {
     await client.query("rollback");
     throw e;
   } finally {
     client.release();
   }
+}
+
+/** Mark a recorded withdrawal paid or failed after the payout attempt. */
+export async function markWithdrawal(id, status, sig) {
+  await query("update withdrawals set status=$1, sig=$2, settled_at=now() where id=$3", [
+    status,
+    sig || null,
+    id,
+  ]);
+}
+
+/** Debited-but-unpaid withdrawals — for operator recovery/retry. */
+export async function listRecoverableWithdrawals() {
+  const r = await query(
+    "select id, user_id, destination, lamports, status, sig, created_at from withdrawals where status='failed' order by created_at",
+  );
+  return r.rows.map((x) => ({
+    id: Number(x.id),
+    userId: x.user_id,
+    destination: x.destination,
+    lamports: Number(x.lamports),
+    status: x.status,
+    createdAt: x.created_at,
+  }));
 }

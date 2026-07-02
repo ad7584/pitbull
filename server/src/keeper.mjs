@@ -27,11 +27,20 @@ export async function keeperStatus() {
 
 /**
  * Provide $ANSEM/SOL liquidity from the keeper. INTENTIONALLY DISABLED.
- * Mainnet implementation outline:
+ *
+ * $ANSEM (9cRCn9…pump) is a TOKEN-2022 mint (verified on-chain: metadata-only
+ * extensions, no transfer fee/hook), so every SPL step MUST target the
+ * Token-2022 program, not the classic one:
  *   1. install @pump-fun/pump-swap-sdk (or Raydium SDK for the migrated pool)
- *   2. swap ~half the pooled SOL → $ANSEM within slippage/MEV bounds
- *   3. addLiquidity(SOL leg, ANSEM leg) → receive LP tokens
- *   4. record lp_tokens in pool_state; value flows back to shares
+ *   2. derive the keeper's $ANSEM ATA with TOKEN_2022_PROGRAM_ID
+ *      (getAssociatedTokenAddressSync(mint, keeper, false, TOKEN_2022_PROGRAM_ID)),
+ *      and create it with createAssociatedTokenAccountIdempotentInstruction using
+ *      the Token-2022 program id
+ *   3. swap ~half the pooled SOL → $ANSEM within slippage/MEV bounds
+ *   4. addLiquidity(SOL leg, ANSEM leg) → receive LP tokens
+ *   5. record lp_tokens + live pool reserves in pool_state, and wire
+ *      pooledValue() in ledger.mjs to value LP at spot (audit #7) BEFORE any
+ *      deposit/withdraw runs against a non-zero lp_tokens
  */
 export async function provideLiquidity() {
   throw new Error(

@@ -27,8 +27,21 @@ create table if not exists deposits (
   lamports   bigint not null,
   created_at timestamptz not null default now()
 );
+
+-- withdrawals: recorded in the SAME tx as the share burn, so a failed payout is
+-- always recoverable from the DB (never a silent burned-but-unpaid).
+create table if not exists withdrawals (
+  id          bigserial primary key,
+  user_id     text not null,
+  destination text not null,
+  lamports    bigint not null,
+  status      text not null default 'pending',   -- pending | paid | failed
+  sig         text,
+  created_at  timestamptz not null default now(),
+  settled_at  timestamptz
+);
 `;
 
 await query(SQL);
-console.log("migrated: users, pool_state, deposits");
+console.log("migrated: users, pool_state, deposits, withdrawals");
 await pool.end();

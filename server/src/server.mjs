@@ -7,7 +7,15 @@ import cors from "cors";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { CLUSTER, IS_MAINNET, PORT, RPC_URL } from "./config.mjs";
 import { depositKeypairFor, keeper } from "./wallets.mjs";
-import { applyWithdrawal, ensureUser, getPool, getUser, redeemableFor } from "./ledger.mjs";
+import {
+  applyWithdrawal,
+  ensureUser,
+  getPool,
+  getUser,
+  listRecoverableWithdrawals,
+  markWithdrawal,
+  redeemableFor,
+} from "./ledger.mjs";
 import { startWatcher } from "./watcher.mjs";
 import { authorizeWithdraw } from "./auth.mjs";
 import { keeperStatus } from "./keeper.mjs";
@@ -73,6 +81,16 @@ app.get("/pool", async (_req, res) => {
   }
 });
 
+// Operator recovery: withdrawals debited but not paid (payout failed).
+// Production: gate behind operator auth.
+app.get("/withdrawals/recover", async (_req, res) => {
+  try {
+    res.json({ recoverable: await listRecoverableWithdrawals() });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // Keeper / LP status (LP itself is disabled — mainnet-only, gated).
 app.get("/keeper/status", async (_req, res) => {
   try {
@@ -112,14 +130,17 @@ app.post("/withdraw", async (req, res) => {
       return res.status(409).json({ error: "insufficient pool liquidity right now — try a smaller amount or later" });
     }
 
-    await applyWithdrawal(userId, amount); // burn shares first (locks; no double-draw)
+    // burn shares + record the withdrawal (pending) atomically
+    const { withdrawalId } = await applyWithdrawal(userId, amount, destination);
     try {
       const { sig } = await payout(keeper, destination, amount);
+      await markWithdrawal(withdrawalId, "paid", sig);
       res.json({ ok: true, sig, lamports: amount, redeemableAfter: await redeemableFor(userId) });
     } catch (e) {
-      // burned but not paid — recoverable by the operator; do not silently drop
-      console.error(`[withdraw] PAYOUT FAILED after burn: ${userId} ${amount}`, e.message);
-      res.status(502).json({ error: "payout failed after debit — contact support", detail: String(e.message || e) });
+      // burned but not paid — persisted as 'failed' for operator recovery
+      await markWithdrawal(withdrawalId, "failed");
+      console.error(`[withdraw] PAYOUT FAILED after burn: wd#${withdrawalId} ${userId} ${amount}`, e.message);
+      res.status(502).json({ error: "payout failed after debit — recorded for recovery", withdrawalId, detail: String(e.message || e) });
     }
   } catch (e) {
     res.status(400).json({ error: String(e.message || e) });
