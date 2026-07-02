@@ -23,6 +23,8 @@ export const env = {
   solanaRpcUrl: read("VITE_SOLANA_RPC_URL"),
   /** $ANSEM mint — env override, else the pinned protocol constant. */
   ansemMint: read("VITE_ANSEM_MINT") || PINNED_ANSEM_MINT,
+  /** Custodial backend base URL. Falls back to local dev server. */
+  apiUrl: read("VITE_API_URL") || "http://localhost:8787",
 } as const;
 
 /** True once the real integration is wired — Privy + RPC both present. */
