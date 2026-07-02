@@ -1,4 +1,4 @@
-import { Coins, Hammer, LogIn, PiggyBank, Share2 } from "lucide-react";
+import { ArrowUpFromLine, Coins, LogIn, Wallet, Waves } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 
@@ -6,27 +6,27 @@ const STEPS: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: LogIn,
     title: "Sign in with X",
-    body: "One tap. Privy creates a self-custodial embedded wallet for you — no seed phrase, no extension, keys stay yours.",
+    body: "One tap. Privy creates a self-custodial embedded wallet for your identity — no seed phrase, no extension.",
   },
   {
-    Icon: PiggyBank,
-    title: "Create your bank",
-    body: "Pick a lock: break-anytime, savings goal, or time-lock. One active bank per identity — enforced on-chain.",
+    Icon: Wallet,
+    title: "Get your deposit address",
+    body: "A unique address, just for you. No wallet-connect needed to fund it — just send to it.",
   },
   {
     Icon: Coins,
-    title: "Fill it",
-    body: "Deposit SOL or $ANSEM, as little or often as you like. Friends can gift into it from your share link.",
+    title: "Send SOL",
+    body: "As little or as often as you like. It’s detected on-chain and credited to your balance automatically (~15s).",
   },
   {
-    Icon: Share2,
-    title: "It works for you",
-    body: "Deposits batch into the $ANSEM liquidity pool and earn 0.20% of every swap. Your share compounds automatically.",
+    Icon: Waves,
+    title: "It pools into $ANSEM LP",
+    body: "Your SOL joins the $ANSEM/SOL liquidity pool and earns 0.20% of every swap. Your share grows with the fees.",
   },
   {
-    Icon: Hammer,
-    title: "Crack it once",
-    body: "When it unlocks, smash it. You receive SOL + $ANSEM directly. Terminal — then start a fresh one.",
+    Icon: ArrowUpFromLine,
+    title: "Withdraw anytime",
+    body: "Redeem your share to any address whenever you want. Only you can withdraw your balance.",
   },
 ];
 

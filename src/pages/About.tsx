@@ -1,8 +1,7 @@
-import { AlertTriangle, Coins, Gift } from "lucide-react";
+import { AlertTriangle, Coins, Shield } from "lucide-react";
 import { Section } from "@/components/layout/Section";
 import { Reveal } from "@/components/ui/Reveal";
 import { ILWarning } from "@/components/ui/ILWarning";
-import { VaultTypes } from "@/components/home/VaultTypes";
 import { LiquidityEngine } from "@/components/home/LiquidityEngine";
 import { PiggyMascot } from "@/components/brand/PiggyMascot";
 import { ANSEM_SYMBOL, COPY } from "@/lib/protocol";
@@ -14,29 +13,24 @@ const QUICK_START: { step: string; detail: string }[] = [
       "One tap — Privy creates a self-custodial embedded wallet under your X identity. No seed phrase, no browser extension. You can export your key anytime.",
   },
   {
-    step: "Create your piggy bank",
+    step: "Get your deposit address",
     detail:
-      "Pick a lock type (break-anytime, savings goal, or time-lock), give it a name. One active bank per identity — the chain enforces it.",
+      "You’re assigned a unique deposit address. No wallet-connect needed to fund it — you simply send SOL to it.",
   },
   {
-    step: `Fill it with SOL or $${ANSEM_SYMBOL}`,
+    step: `Send SOL (or $${ANSEM_SYMBOL})`,
     detail:
-      "Deposit as little or as often as you like. Small and regular beats all-in. Deposits join the liquidity pool at the next batch.",
+      "As little or as often as you like. Small and regular beats all-in. Your transfer is detected on-chain and credited to your balance in ~15s.",
   },
   {
-    step: "Share your link",
+    step: "It pools into $ANSEM liquidity",
     detail:
-      "Every bank has a share card with its address and QR — friends can gift straight into it. Gifts are irreversible and lock under your rules.",
+      "Deposits are pooled and provided as $ANSEM/SOL liquidity, which earns 0.20% of every swap. Your share of the pool grows with the fees.",
   },
   {
-    step: "Watch both numbers",
+    step: "Withdraw anytime",
     detail:
-      "Saved is what went in; Worth-now is your live share of the pool. Worth moves with the market — it can be more or less than Saved.",
-  },
-  {
-    step: "Crack it open — once",
-    detail:
-      "When your lock allows it, smash the bank. You receive the SOL leg + $ANSEM leg directly. It's terminal; start a fresh one after.",
+      "Redeem your share of the pool to any address, whenever you want. Only you can withdraw your balance — verified by your X identity.",
   },
 ];
 
@@ -45,32 +39,6 @@ const PROBLEMS = [
   ["Airdrops dump instantly", "Free, unlocked tokens become same-hour sell pressure."],
   ["Thin pool, huge mcap", "Concentrated supply; valuation outruns real depth."],
   ["Late retail = exit liquidity", "Attention is the product; the audience is the exit."],
-];
-
-const REWARDS = [
-  {
-    Icon: Coins,
-    title: "Organic — 0.20% LP fees",
-    body: "Accrue inside the pool. Each pen's share grows in value — no distribution, just share math.",
-    tint: "text-lime",
-  },
-  {
-    Icon: Gift,
-    title: "Creator-fee incentives",
-    body: "Redirected creator-fee SOL, merkle-dropped and weighted by lock type & duration. Longer locks earn more — the fix for the airdrop-dump problem.",
-    tint: "text-piggy",
-  },
-];
-
-const DECISIONS = [
-  {
-    title: "1 · The IL model",
-    body: "Is this honest savings, or LP exposure in a savings costume? We ship naive 50/50 LP for max fees, with a partial, capped, fee-funded buffer — and disclose it plainly. No free lunch, chosen consciously.",
-  },
-  {
-    title: "2 · The custody model",
-    body: "Privy embedded wallets run in self-custodial mode — your key is sharded, reassembled only client-side, exportable anytime. Neither Privy nor the app can recover or rotate it. Anything else would make us a co-signer on every pen; the honest version is the only version.",
-  },
 ];
 
 export default function About() {
@@ -84,8 +52,8 @@ export default function About() {
               A commitment device disguised as nostalgia.
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-lg leading-relaxed text-mute">
-              Everyone already knows you don't crack a piggy bank early. That single rule turns deposits into durable
-              liquidity instead of the dump-in-an-hour problem killing airdrops today.
+              Deposit small amounts of SOL, pool them into durable $ANSEM liquidity, earn the swap fees, and withdraw
+              your share whenever you like — turning saving behavior into depth instead of the dump-in-an-hour problem.
             </p>
           </div>
           <div className="hidden lg:block">
@@ -94,7 +62,7 @@ export default function About() {
         </div>
       </Section>
 
-      <Section eyebrow="Getting started" title="Six steps, start to smash">
+      <Section eyebrow="Getting started" title="Five steps, deposit to withdraw">
         <div className="grid gap-3 md:grid-cols-2">
           {QUICK_START.map((q, i) => (
             <Reveal key={q.step} delay={i * 0.05}>
@@ -131,22 +99,9 @@ export default function About() {
         </div>
         <Reveal delay={0.2}>
           <p className="mt-6 max-w-3xl text-pretty text-lg leading-relaxed text-mute">
-            The fix isn't “more tokens in circulation” — it's a{" "}
-            <span className="text-paper">deep, two-sided pool</span> that absorbs exits without cratering. Redirect the
-            creator-fee firehose toward building depth instead of scattering sell pressure.
+            The fix isn’t “more tokens in circulation” — it’s a{" "}
+            <span className="text-paper">deeper, two-sided pool</span> that absorbs exits without cratering.
           </p>
-        </Reveal>
-      </Section>
-
-      <Section eyebrow="Vault types" title="Pick your lock">
-        <VaultTypes />
-        <Reveal delay={0.15}>
-          <div className="mt-4 rounded-3xl border border-lime/20 bg-lime/[0.05] p-5 text-sm leading-relaxed text-mute">
-            <span className="font-semibold text-lime">Synchronized-exit guard.</span> If thousands of goal pens hit
-            the same target and break in one block, that's the crater we're preventing. So each unlock carries
-            per-vault jitter + a cooldown window — breaks stagger over hours, not one block. A safety property, not
-            optional polish.
-          </div>
         </Reveal>
       </Section>
 
@@ -154,51 +109,38 @@ export default function About() {
         <LiquidityEngine />
       </Section>
 
-      <Section id="rewards" eyebrow="Rewards" title="Two streams, kept distinct">
-        <div className="grid gap-4 md:grid-cols-2">
-          {REWARDS.map((r, i) => (
-            <Reveal key={r.title} delay={i * 0.08}>
-              <div className="card h-full p-6">
-                <span className={`grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/5 ${r.tint}`}>
-                  <r.Icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 font-display text-xl font-bold">{r.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-mute">{r.body}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </Section>
-
-      <Section id="safety" eyebrow="Safety" title="Irreversible means over-invest here">
+      <Section id="rewards" eyebrow="Rewards" title="0.20% of every swap">
         <Reveal>
           <div className="card p-6">
-            <blockquote className="border-l-2 border-piggy pl-4 text-lg leading-relaxed text-paper">
-              No user and no admin can deploy, alter, or withdraw the LP position. Admin can pause inflow only;
-              <span className="text-piggy"> break is structurally unpausable</span>; treasury sweeps can never reach
-              principal, pending SOL, or the buffer.
-            </blockquote>
-            <ul className="mt-5 grid gap-2 text-sm text-mute sm:grid-cols-2">
-              <li>• Anchor / Rust declarative constraints kill whole bug classes.</li>
-              <li>• Circuit breaker halts deposits + crank, never a user's exit.</li>
-              <li>• CPI / reentrancy-safe swap-and-LP; pinned pool, validated accounts.</li>
-              <li>• Two independent audits + public testnet + bug bounty before mainnet.</li>
-            </ul>
+            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/5 text-lime">
+              <Coins className="h-5 w-5" />
+            </span>
+            <h3 className="mt-4 font-display text-xl font-bold">Organic LP fees</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-mute">
+              The pool earns 0.20% of every $ANSEM swap. Those fees accrue inside the pool and grow the value of your
+              share — no distribution, no claim step, just share math. Your withdrawal reflects fees earned while you
+              were in.
+            </p>
           </div>
         </Reveal>
       </Section>
 
-      <Section eyebrow="Open design decisions" title="Resolved before writing a line of program code">
-        <div className="grid gap-4 md:grid-cols-2">
-          {DECISIONS.map((d, i) => (
-            <Reveal key={d.title} delay={i * 0.08}>
-              <div className="card h-full p-6">
-                <h3 className="font-display text-lg font-bold text-piggy-300">{d.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-mute">{d.body}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+      <Section id="safety" eyebrow="Safety" title="Custodial — know exactly what you’re trusting">
+        <Reveal>
+          <div className="card p-6">
+            <blockquote className="border-l-2 border-piggy pl-4 text-lg leading-relaxed text-paper">
+              This is a <span className="text-piggy">custodial pool</span>. Your deposit is swept into an
+              operator-controlled wallet; you hold a claim on the pool, redeemable when you withdraw. You are trusting
+              the operator’s honesty, key security, and solvency — not a trustless contract.
+            </blockquote>
+            <ul className="mt-5 grid gap-2 text-sm text-mute sm:grid-cols-2">
+              <li>• Only you can withdraw your balance — verified against your X (Privy) token.</li>
+              <li>• Withdrawals are checked for solvency before your share is debited.</li>
+              <li>• Liquidity goes to one pinned $ANSEM pool; no client-supplied addresses.</li>
+              <li>• The operator’s keys control pooled funds — custody security is on them.</li>
+            </ul>
+          </div>
+        </Reveal>
       </Section>
 
       <Section id="risks" eyebrow="Risks & honest disclosures" title="Read this part twice">
@@ -213,10 +155,11 @@ export default function About() {
           ))}
         </div>
         <Reveal delay={0.2}>
-          <p className="mt-8 text-center text-sm text-faint">
-            This describes a system design. Not financial advice, not an endorsement of any token. Verify every
-            contract, audit, and liquidity profile independently before participating.
-          </p>
+          <div className="mt-6 flex items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-mute">
+            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-mute" />
+            Not financial advice, not an endorsement of any token. This is a custodial product — verify the operator,
+            the pool, and your own risk tolerance before depositing anything you can’t afford to lose.
+          </div>
         </Reveal>
       </Section>
     </div>

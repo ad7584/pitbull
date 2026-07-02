@@ -10,7 +10,6 @@ import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import About from "@/pages/About";
 import Terms from "@/pages/Terms";
-import { usePit } from "@/lib/store";
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -28,18 +27,6 @@ function ScrollManager() {
 }
 
 export default function App() {
-  const tickMarket = usePit((s) => s.tickMarket);
-  const setNow = usePit((s) => s.setNow);
-
-  useEffect(() => {
-    const market = window.setInterval(tickMarket, 2200);
-    const clock = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      clearInterval(market);
-      clearInterval(clock);
-    };
-  }, [tickMarket, setNow]);
-
   return (
     <div className="grain relative flex min-h-screen flex-col">
       <Aurora />

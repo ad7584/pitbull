@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { Hero } from "@/components/home/Hero";
 import { GlobalStats } from "@/components/home/GlobalStats";
 import { HowItWorks } from "@/components/home/HowItWorks";
-import { VaultTypes } from "@/components/home/VaultTypes";
 import { LiquidityEngine } from "@/components/home/LiquidityEngine";
 import { Section } from "@/components/layout/Section";
 import { Reveal } from "@/components/ui/Reveal";
@@ -48,14 +47,6 @@ export default function Landing() {
         intro="Attention leaks into same-hour dumps. A piggy bank you can only crack once turns saving behavior into a pool that absorbs exits instead of causing them."
       >
         <HowItWorks />
-      </Section>
-
-      <Section
-        eyebrow="Vault types"
-        title="Pick your lock"
-        intro="Three ways to seal a pen. Longer, harder locks deepen liquidity the most — so they earn the most from the redirected creator-fee stream."
-      >
-        <VaultTypes />
       </Section>
 
       <Section
