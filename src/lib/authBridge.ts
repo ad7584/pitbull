@@ -6,7 +6,13 @@
 // and the app uses its own mock sign-in flow.
 type Fn = () => void;
 
-export const authBridge: { login: Fn; logout: Fn } = {
+export const authBridge: {
+  login: Fn;
+  logout: Fn;
+  /** the current Privy access token, for owner-only backend calls. */
+  getAccessToken: () => Promise<string | null>;
+} = {
   login: () => {},
   logout: () => {},
+  getAccessToken: async () => null,
 };

@@ -25,6 +25,9 @@ export interface Auth {
   handle: string;
   displayName: string;
   pubkey: string;
+  /** stable backend identity = the Privy DID (token subject). Owner-only auth
+   *  matches this against the verified access token. Falls back to pubkey. */
+  userId: string;
 }
 
 export interface Toast {
@@ -67,7 +70,7 @@ interface PitState {
   // auth (Privy: X login → embedded wallet)
   signInWithX: (handle?: string) => void;
   /** called by PrivyBridge once real auth + embedded wallet are ready. */
-  setConnectedFromPrivy: (handle: string, pubkey: string) => void;
+  setConnectedFromPrivy: (handle: string, pubkey: string, userId: string) => void;
   signOut: () => void;
 
   // program actions
@@ -93,7 +96,7 @@ const AMBIENT_HANDLES = ["vaultrat", "moonfarmer", "greenwojak", "stacksol", "dc
 export const usePit = create<PitState>((set, get) => ({
   ...world,
   now: Date.now(),
-  auth: { status: "guest", handle: "", displayName: "", pubkey: "" },
+  auth: { status: "guest", handle: "", displayName: "", pubkey: "", userId: "" },
   toasts: [],
   lastBreak: null,
 
@@ -123,16 +126,17 @@ export const usePit = create<PitState>((set, get) => ({
         handle: h,
         displayName: h === DEMO_USER.handle ? "you" : h,
         pubkey: h === DEMO_USER.handle ? DEMO_USER.pubkey : pubkeyForHandle(h),
+        userId: h === DEMO_USER.handle ? DEMO_USER.pubkey : pubkeyForHandle(h),
       },
     });
     get().pushToast({ title: "Signed in with X", desc: "Privy embedded wallet ready — self-custodial, keys stay yours.", tone: "success" });
   },
-  setConnectedFromPrivy: (handle, pubkey) => {
+  setConnectedFromPrivy: (handle, pubkey, userId) => {
     const cur = get().auth;
     // avoid redundant updates on Privy's re-renders
     if (cur.status === "connected" && cur.pubkey === pubkey) return;
     const h = handle.trim() || "anon";
-    set({ auth: { status: "connected", handle: h, displayName: h, pubkey } });
+    set({ auth: { status: "connected", handle: h, displayName: h, pubkey, userId: userId || pubkey } });
     get().pushToast({
       title: "Wallet ready",
       desc: "Privy embedded wallet connected — self-custodial, keys stay yours.",
@@ -140,7 +144,7 @@ export const usePit = create<PitState>((set, get) => ({
     });
   },
   signOut: () =>
-    set({ auth: { status: "guest", handle: "", displayName: "", pubkey: "" } }),
+    set({ auth: { status: "guest", handle: "", displayName: "", pubkey: "", userId: "" } }),
 
   createPen: (kind, unlockParam, name, charityName) => {
     const { auth, pens, config } = get();

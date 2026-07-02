@@ -26,7 +26,7 @@ export default function Dashboard() {
   return (
     <>
       <div className="mx-auto max-w-6xl px-4 pt-24 sm:px-6">
-        <DepositCard userId={auth.pubkey} />
+        <DepositCard userId={auth.userId} />
       </div>
       {myPen ? (
         <PenDetail pen={myPen} isOwner />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { api, type Balance } from "@/lib/api";
+import { authBridge } from "@/lib/authBridge";
 import { LAMPORTS_PER_SOL } from "@/lib/protocol";
 import { fmtCompact, fmtSol } from "@/lib/format";
 
@@ -65,7 +66,9 @@ export function DepositCard({ userId }: { userId: string }) {
     setWResult(null);
     try {
       const lamports = amount ? Math.round(parseFloat(amount) * LAMPORTS_PER_SOL) : undefined;
-      const r = await api.withdraw({ userId, destination: dest.trim(), lamports });
+      // owner-only: attach the Privy access token so the backend verifies it's us
+      const authToken = (await authBridge.getAccessToken()) ?? undefined;
+      const r = await api.withdraw({ userId, destination: dest.trim(), lamports, authToken });
       setWResult(r.sig);
       setDest("");
       setAmount("");

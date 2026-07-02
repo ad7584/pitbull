@@ -25,7 +25,7 @@ function solanaAddress(accounts: LinkedAccountWithMetadata[] | undefined): strin
  * don't need just to read an address.
  */
 export function PrivyBridge() {
-  const { ready, authenticated, user, logout } = usePrivy();
+  const { ready, authenticated, user, logout, getAccessToken } = usePrivy();
   const { login } = useLogin();
   const setConnected = usePit((s) => s.setConnectedFromPrivy);
   const signOut = usePit((s) => s.signOut);
@@ -36,15 +36,17 @@ export function PrivyBridge() {
     authBridge.logout = () => {
       void logout();
     };
-  }, [login, logout]);
+    authBridge.getAccessToken = getAccessToken;
+  }, [login, logout, getAccessToken]);
 
   // mirror Privy → store
   useEffect(() => {
     if (!ready) return;
     const address = solanaAddress(user?.linkedAccounts);
-    if (authenticated && address) {
-      const handle = user?.twitter?.username || user?.twitter?.name || "anon";
-      setConnected(handle, address);
+    if (authenticated && address && user) {
+      const handle = user.twitter?.username || user.twitter?.name || "anon";
+      // user.id is the Privy DID = the access-token subject (owner-only key)
+      setConnected(handle, address, user.id);
     } else if (!authenticated) {
       signOut();
     }
