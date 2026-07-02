@@ -9,6 +9,7 @@ import { ANSEM_MINT, CLUSTER, CRANK_THRESHOLD_LAMPORTS } from "./config.mjs";
 import { getPool } from "./ledger.mjs";
 import { keeper } from "./wallets.mjs";
 import { balanceOf } from "./solana-tx.mjs";
+import { getPoolState, mainnetConnection, provideLiquidity as lpProvide } from "./lp.mjs";
 
 export async function keeperStatus() {
   const pool = await getPool();
@@ -42,8 +43,17 @@ export async function keeperStatus() {
  *      pooledValue() in ledger.mjs to value LP at spot (audit #7) BEFORE any
  *      deposit/withdraw runs against a non-zero lp_tokens
  */
-export async function provideLiquidity() {
-  throw new Error(
-    "LP provision is disabled: mainnet-only and requires audit + legal + secure key custody before enabling.",
-  );
+/** Live $ANSEM/SOL pool state (read-only, mainnet). */
+export async function lpPoolState() {
+  return getPoolState(mainnetConnection());
+}
+
+/**
+ * Provide liquidity. Delegates to the LP engine, which SIMULATES by default
+ * (no funds). Live execution is hard-gated (LP_LIVE_ENABLED) and must not be
+ * enabled before an audit + staged rollout. `baseAmountAnsem` is the $ANSEM the
+ * keeper adds; it must already hold it (acquire via a swap first).
+ */
+export async function provideLiquidity(baseAmountAnsem, opts = {}) {
+  return lpProvide(keeper, baseAmountAnsem, opts);
 }

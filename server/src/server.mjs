@@ -18,7 +18,7 @@ import {
 } from "./ledger.mjs";
 import { startWatcher } from "./watcher.mjs";
 import { authorizeWithdraw } from "./auth.mjs";
-import { keeperStatus } from "./keeper.mjs";
+import { keeperStatus, lpPoolState } from "./keeper.mjs";
 import { balanceOf, FEE, payout } from "./solana-tx.mjs";
 
 // ---- fail-closed on mainnet misconfiguration ----
@@ -91,10 +91,25 @@ app.get("/withdrawals/recover", async (_req, res) => {
   }
 });
 
-// Keeper / LP status (LP itself is disabled — mainnet-only, gated).
+// Keeper / LP status (LP execution is disabled — mainnet-only, gated).
 app.get("/keeper/status", async (_req, res) => {
   try {
     res.json(await keeperStatus());
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// Live $ANSEM PumpSwap pool state (read-only, mainnet). Proves the LP engine.
+app.get("/lp/pool", async (_req, res) => {
+  try {
+    const s = await lpPoolState();
+    res.json({
+      lpMint: s.lpMint,
+      ansemReserve: Number(s.baseReserve) / 1e6,
+      solReserve: Number(s.quoteReserve) / 1e9,
+      lpSupply: s.lpSupply.toString(),
+    });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }
