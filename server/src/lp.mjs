@@ -14,7 +14,27 @@ import BN from "bn.js";
 
 // The live $ANSEM/SOL PumpSwap pool (verified on-chain, ~$1.6M liquidity).
 export const ANSEM_POOL = new PublicKey("FnzKY6x7entQ1eR3D225dQyT7ybfka4PskBMQhb8L3CC");
+const ANSEM_MINT = new PublicKey("9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump");
 const SLIPPAGE_PCT = 1;
+
+async function sendSigned(connection, keeper, ixs) {
+  const { blockhash } = await connection.getLatestBlockhash();
+  const msg = new TransactionMessage({
+    payerKey: keeper.publicKey,
+    recentBlockhash: blockhash,
+    instructions: ixs,
+  }).compileToV0Message();
+  const tx = new VersionedTransaction(msg);
+  tx.sign([keeper]);
+  const sig = await connection.sendTransaction(tx);
+  await connection.confirmTransaction(sig, "confirmed");
+  return sig;
+}
+
+async function ansemUiBalance(connection, owner) {
+  const r = await connection.getParsedTokenAccountsByOwner(owner, { mint: ANSEM_MINT });
+  return r.value.reduce((s, a) => s + (a.account.data.parsed?.info?.tokenAmount?.uiAmount ?? 0), 0);
+}
 
 const MAINNET_RPC =
   process.env.LP_MAINNET_RPC_URL ||
@@ -109,9 +129,17 @@ export async function provideLiquidityFromSol(keeper, solLamports, { live = fals
   if (process.env.LP_LIVE_ENABLED !== "true") {
     throw new Error("LP live execution disabled. Enable only after audit + funded fork test + staged rollout.");
   }
-  // Live buy→deposit is intentionally NOT wired to execute in this build — it is
-  // the audited step. Implement per lp-forktest.md, gated behind LP_LIVE_ENABLED.
-  throw new Error("Live LP-from-SOL execution not enabled in this build.");
+  // LIVE: buy ~half the SOL into $ANSEM, then deposit both legs → LP tokens.
+  const online = new OnlinePumpAmmSdk(connection);
+  const offline = new PumpAmmSdk();
+  const swapState = await online.swapSolanaState(ANSEM_POOL, keeper.publicKey);
+  const buySig = await sendSigned(connection, keeper, await offline.buyQuoteInput(swapState, new BN(String(half)), SLIPPAGE_PCT));
+  const held = await ansemUiBalance(connection, keeper.publicKey);
+  const liq = await online.liquiditySolanaState(ANSEM_POOL, keeper.publicKey);
+  const base = new BN(Math.floor(held * 0.98 * 1e6).toString());
+  const { lpToken } = offline.depositAutocompleteQuoteAndLpTokenFromBase(liq, base, SLIPPAGE_PCT);
+  const depSig = await sendSigned(connection, keeper, await offline.depositInstructions(liq, lpToken, SLIPPAGE_PCT));
+  return { simulated: false, buySig, depSig, lpTokenOut: lpToken.toString() };
 }
 
 /** Dry-run a deposit against mainnet — no funds, no signature. */
