@@ -35,6 +35,12 @@ export interface PoolState {
   lpTokens: number;
   totalShares: number;
 }
+export interface Stats {
+  tvlLamports: number;
+  totalShares: number;
+  lpTokens: number;
+  ansem: { priceUsd: number; liquidityUsd: number | null; marketCap: number | null } | null;
+}
 
 export const api = {
   health: () => req<Health>("/health"),
@@ -46,6 +52,8 @@ export const api = {
     }),
   balance: (userId: string) => req<Balance>(`/balance/${encodeURIComponent(userId)}`),
   pool: () => req<PoolState>("/pool"),
+  /** Real headline stats: TVL + live $ANSEM price. */
+  stats: () => req<Stats>("/stats"),
   /** Owner-only withdrawal to a destination address. */
   withdraw: (body: { userId: string; destination: string; lamports?: number; authToken?: string }) =>
     req<{ ok: boolean; sig: string; lamports: number; redeemableAfter: number }>("/withdraw", {

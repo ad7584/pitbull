@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Loader2, LogOut, Menu, PiggyBank, Trophy, Volume2, VolumeX, Wallet, X } from "lucide-react";
+import { ChevronDown, Loader2, LogOut, Menu, PiggyBank, Volume2, VolumeX, Wallet, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar } from "@/components/ui/Avatar";
@@ -13,15 +13,11 @@ import { authBridge } from "@/lib/authBridge";
 import { useWalletBalances } from "@/lib/useWalletBalances";
 import { cn } from "@/lib/cn";
 
-const LINKS = [
-  { to: "/explore", label: "Explore", icon: Trophy },
-  { to: "/about", label: "How it works", icon: PiggyBank },
-];
+const LINKS = [{ to: "/about", label: "How it works", icon: PiggyBank }];
 
 export function Nav() {
   const auth = usePit((s) => s.auth);
   const signOut = usePit((s) => s.signOut);
-  const myPen = usePit((s) => s.myPen());
   const { openSignIn, soundOn, toggleSound } = useUI();
   const { balances, loading: balLoading } = useWalletBalances(auth.pubkey || undefined);
 
@@ -138,11 +134,7 @@ export function Nav() {
                       </div>
                     )}
                     <div className="divider my-1" />
-                    <MenuItem
-                      icon={PiggyBank}
-                      label={myPen ? "My piggy bank" : "Open a piggy bank"}
-                      onClick={() => nav(myPen ? "/dashboard" : "/create")}
-                    />
+                    <MenuItem icon={PiggyBank} label="Dashboard" onClick={() => nav("/dashboard")} />
                     <MenuItem icon={LogOut} label="Sign out" onClick={disconnect} danger />
                   </motion.div>
                 )}
@@ -176,12 +168,12 @@ export function Nav() {
               <button
                 onClick={() => {
                   if (auth.status === "guest") connect();
-                  else nav(myPen ? "/dashboard" : "/create");
+                  else nav("/dashboard");
                 }}
                 className="mt-1 flex items-center gap-2.5 rounded-xl bg-piggy/15 px-3 py-3 text-sm font-semibold text-piggy-300 transition hover:bg-piggy/25"
               >
                 <PiggyBank className="h-4 w-4" />
-                {auth.status === "guest" ? "Connect" : myPen ? "My piggy bank" : "Open a piggy bank"}
+                {auth.status === "guest" ? "Connect" : "Dashboard"}
               </button>
             </div>
           </motion.nav>

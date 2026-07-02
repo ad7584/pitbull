@@ -45,6 +45,20 @@ export function mainnetConnection() {
   return new Connection(MAINNET_RPC, "confirmed");
 }
 
+/** Real $ANSEM market data (price, liquidity, market cap) from DexScreener. */
+export async function getAnsemMarket() {
+  const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ANSEM_MINT.toBase58()}`);
+  const j = await r.json();
+  const pairs = j.pairs || [];
+  const best = pairs.find((p) => p.dexId === "pumpswap") || pairs[0];
+  if (!best) return null;
+  return {
+    priceUsd: Number(best.priceUsd),
+    liquidityUsd: best.liquidity?.usd ?? null,
+    marketCap: best.marketCap ?? best.fdv ?? null,
+  };
+}
+
 /** Read the live pool — reserves, LP mint + supply, spot price. Read-only. */
 export async function getPoolState(connection) {
   const online = new OnlinePumpAmmSdk(connection);

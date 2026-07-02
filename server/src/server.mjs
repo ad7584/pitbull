@@ -19,6 +19,7 @@ import {
 import { startWatcher } from "./watcher.mjs";
 import { authorizeWithdraw } from "./auth.mjs";
 import { keeperStatus, lpPoolState } from "./keeper.mjs";
+import { getAnsemMarket } from "./lp.mjs";
 import { balanceOf, FEE, payout } from "./solana-tx.mjs";
 
 // ---- fail-closed on mainnet misconfiguration ----
@@ -76,6 +77,22 @@ app.get("/balance/:userId", async (req, res) => {
 app.get("/pool", async (_req, res) => {
   try {
     res.json(await getPool());
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// Real headline stats: TVL (pooled SOL + LP value) and the live $ANSEM price.
+app.get("/stats", async (_req, res) => {
+  try {
+    const pool = await getPool();
+    const ansem = await getAnsemMarket().catch(() => null);
+    res.json({
+      tvlLamports: pool.pendingLamports + pool.lpValueLamports,
+      totalShares: pool.totalShares,
+      lpTokens: pool.lpTokens,
+      ansem, // { priceUsd, liquidityUsd, marketCap } | null
+    });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }

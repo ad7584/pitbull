@@ -1,18 +1,13 @@
 import { useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
 import { Aurora } from "@/components/brand/Aurora";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { FillModal } from "@/components/pens/FillModal";
-import { ShareModal } from "@/components/pens/ShareModal";
-import { SmashModal } from "@/components/pens/SmashModal";
 import { Toasts } from "@/components/ui/Toasts";
 import Landing from "@/pages/Landing";
-import CreatePen from "@/pages/CreatePen";
 import Dashboard from "@/pages/Dashboard";
-import Explore from "@/pages/Explore";
-import PenView from "@/pages/PenView";
 import About from "@/pages/About";
 import Terms from "@/pages/Terms";
 import { usePit } from "@/lib/store";
@@ -53,12 +48,13 @@ export default function App() {
         <ScrollManager />
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/create" element={<CreatePen />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/pen/:handle" element={<PenView />} />
           <Route path="/about" element={<About />} />
           <Route path="/terms" element={<Terms />} />
+          {/* retired demo routes → the real deposit flow */}
+          <Route path="/create" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/explore" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/pen/:handle" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Landing />} />
         </Routes>
       </main>
@@ -67,8 +63,6 @@ export default function App() {
       {/* global modals */}
       <SignInModal />
       <FillModal />
-      <ShareModal />
-      <SmashModal />
       <Toasts />
     </div>
   );
