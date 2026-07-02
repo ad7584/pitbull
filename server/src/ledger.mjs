@@ -28,6 +28,18 @@ export async function ensureUser(userId, depositAddress) {
   return getUser(userId);
 }
 
+export async function listUsers() {
+  const r = await query(
+    "select user_id, deposit_address, credited_lamports, shares, last_sig from users",
+  );
+  return r.rows.map(mapUser);
+}
+
+/** Advance a user's scan cursor (newest signature seen, credited or not). */
+export async function setLastSig(userId, sig) {
+  await query("update users set last_sig=$1 where user_id=$2", [sig, userId]);
+}
+
 export async function getPool() {
   const r = await query(
     "select pending_lamports, lp_tokens, total_shares from pool_state where id=1",
