@@ -1,0 +1,7 @@
+node_modules
+.env
+# secrets: master seed + keeper key — NEVER commit
+.secrets/
+# the ledger (runtime state)
+.data/
+*.log

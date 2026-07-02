@@ -14,9 +14,18 @@ export const BPS_DENOM = 10_000;
 
 // Config defaults (state.rs Config).
 export const DEFAULT_MIN_DEPOSIT = 0.005 * LAMPORTS_PER_SOL;
-export const DEFAULT_CRANK_THRESHOLD = 2 * LAMPORTS_PER_SOL;
+// Provide liquidity once pending deposits cross 10 SOL worth (was time/2-SOL).
+export const DEFAULT_CRANK_THRESHOLD = 10 * LAMPORTS_PER_SOL;
 export const IL_REIMBURSE_BPS = 5_000; // buffer covers up to 50% of realized IL
 export const IL_REIMBURSE_CAP = 0.5 * LAMPORTS_PER_SOL; // hard cap per pen
+
+// Gain-split DESTINATION wallets (public keys only — safe to ship). The three
+// keypairs were generated locally; their PRIVATE keys live OUTSIDE this repo
+// (~/pitbull-keys) and must be moved to secure/cold storage. Never commit or
+// bundle a private key. These addresses only ever RECEIVE here.
+export const REWARDS_WALLET = "BNoGaMvndXcExKR16Yq9U2Ex2NkbFMgqyibYFRtUyA4w"; // 70% owner rewards
+export const IL_BUFFER_WALLET = "8LbjQcJaSm3fMuKbNC361PCbVJqtr3eAs9VyX85wGMrZ"; // 20% IL buffer
+export const TREASURY_WALLET = "EhKUtUecK1Npy8yjkTGHATPe6ktAuz4owwiT3sxcg1XG"; // 10% treasury
 
 // Pinned identifiers (lib.rs declare_id! / pumpswap.rs / Config.ansem_mint).
 export const PROGRAM_ID = "PitBu11111111111111111111111111111111111111";

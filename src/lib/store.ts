@@ -222,9 +222,20 @@ export const usePit = create<PitState>((set, get) => ({
   },
 
   break_: (penOwner) => {
-    const { pens, vault, pool, config } = get();
+    const { pens, vault, pool, config, auth } = get();
     const pen = pens.find((p) => p.owner === penOwner);
     if (!pen) return null;
+    // Only the pen's owner may break it and withdraw — no one else. In the
+    // real program this is enforced on-chain by requiring the owner's
+    // signature against the ["pen", owner] PDA; here we enforce the same rule.
+    if (auth.status !== "connected" || auth.pubkey !== pen.owner) {
+      get().pushToast({
+        title: "Not your bank",
+        desc: "Only the owner can smash this piggy bank and withdraw.",
+        tone: "danger",
+      });
+      return null;
+    }
     const { vault: nv, pool: np, quote } = applyBreak(pen, vault, pool, config);
     const activity: Activity = {
       id: `b-${penOwner}-${Date.now()}`,
