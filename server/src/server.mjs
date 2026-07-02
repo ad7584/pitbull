@@ -3,6 +3,7 @@
 // Deposit DETECTION, the LP keeper, and owner-only WITHDRAWAL are Stage 2–4.
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import { Connection } from "@solana/web3.js";
 import { CLUSTER, PORT, RPC_URL } from "./config.mjs";
 import { depositKeypairFor, keeper } from "./wallets.mjs";
@@ -10,6 +11,7 @@ import { ensureUser, getPool, getUser } from "./ledger.mjs";
 import { startWatcher } from "./watcher.mjs";
 
 const app = express();
+app.use(cors()); // prototype: allow all origins (restrict before mainnet)
 app.use(express.json());
 export const connection = new Connection(RPC_URL, "confirmed");
 
