@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchBalances, type WalletBalances } from "./solana";
+import type { WalletBalances } from "./solana";
 import { isConfigured } from "./env";
 
 interface BalancesState {
@@ -12,6 +12,10 @@ interface BalancesState {
  * Live SOL + $ANSEM balances for the connected address. No-ops (returns null)
  * in mock mode or when there's no address, so it's always safe to call.
  * Refetches when `address` changes; poll interval keeps it fresh.
+ *
+ * `@solana/web3.js` is a heavy dependency, so it's dynamically imported inside
+ * the effect — guests and the landing page never pay for it; it loads only
+ * when a connected wallet first needs a balance.
  */
 export function useWalletBalances(address: string | undefined, pollMs = 30_000): BalancesState {
   const [state, setState] = useState<BalancesState>({ balances: null, loading: false, error: false });
@@ -22,11 +26,15 @@ export function useWalletBalances(address: string | undefined, pollMs = 30_000):
       return;
     }
     let alive = true;
-    const load = () => {
+    const load = async () => {
       setState((s) => ({ ...s, loading: true }));
-      fetchBalances(address)
-        .then((b) => alive && setState({ balances: b, loading: false, error: false }))
-        .catch(() => alive && setState((s) => ({ balances: s.balances, loading: false, error: true })));
+      try {
+        const { fetchBalances } = await import("./solana");
+        const b = await fetchBalances(address);
+        if (alive) setState({ balances: b, loading: false, error: false });
+      } catch {
+        if (alive) setState((s) => ({ balances: s.balances, loading: false, error: true }));
+      }
     };
     load();
     const id = window.setInterval(load, pollMs);
