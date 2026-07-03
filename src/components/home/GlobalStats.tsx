@@ -1,85 +1,53 @@
-import { Coins, DollarSign, TrendingUp, Waves } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { fmtCompact, fmtSol } from "@/lib/format";
 import { useStats } from "@/lib/useStats";
 import { cn } from "@/lib/cn";
 
-/** Real headline numbers from the backend — protocol TVL + live $ANSEM market. */
+/** Real headline numbers — protocol TVL + live $ANSEM market. Flat, tabular. */
 export function GlobalStats() {
   const stats = useStats();
   const ansem = stats?.ansem ?? null;
   const usd = (n: number | null | undefined) => (n == null ? "—" : `$${fmtCompact(n)}`);
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      <StatCard
-        className="col-span-2"
-        icon={Waves}
-        label="Total pooled (this protocol)"
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.08] lg:grid-cols-4">
+      <StatCell
+        label="Total pooled"
         accent
-        big
-        value={
-          <>
-            <span className="text-4xl font-bold text-gradient-warm">
-              {stats ? fmtSol(stats.tvlLamports) : "…"}
-            </span>
-            <span className="ml-1.5 text-lg text-mute">SOL</span>
-          </>
-        }
-        sub="real deposits pooled into $ANSEM liquidity"
+        value={stats ? fmtSol(stats.tvlLamports) : "—"}
+        unit="SOL"
+        sub="deposits in $ANSEM liquidity"
       />
-      <StatCard
-        icon={TrendingUp}
+      <StatCell
         label="$ANSEM price"
-        value={<span className="text-2xl font-bold tnum text-mint">{ansem ? `$${ansem.priceUsd.toFixed(4)}` : "…"}</span>}
-        sub="live market price"
+        value={ansem ? `$${ansem.priceUsd.toFixed(4)}` : "—"}
+        sub="live market"
       />
-      <StatCard
-        icon={DollarSign}
-        label="$ANSEM market cap"
-        value={<span className="text-2xl font-bold tnum">{usd(ansem?.marketCap)}</span>}
-      />
-      <StatCard
-        className="col-span-2"
-        icon={Coins}
-        label="$ANSEM pool liquidity"
-        value={<span className="text-2xl font-bold tnum text-lime">{usd(ansem?.liquidityUsd)}</span>}
-        sub="depth of the live $ANSEM/SOL market"
-      />
+      <StatCell label="$ANSEM market cap" value={usd(ansem?.marketCap)} sub="fully diluted" />
+      <StatCell label="Pool liquidity" value={usd(ansem?.liquidityUsd)} sub="$ANSEM/SOL depth" />
     </div>
   );
 }
 
-function StatCard({
-  icon: Icon,
+function StatCell({
   label,
   value,
+  unit,
   sub,
   accent,
-  big,
-  className,
 }: {
-  icon: LucideIcon;
   label: string;
   value: React.ReactNode;
+  unit?: string;
   sub?: string;
   accent?: boolean;
-  big?: boolean;
-  className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "card relative overflow-hidden p-5",
-        accent && "border-piggy/20 bg-gradient-to-br from-piggy/[0.08] to-transparent",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-2 text-mute">
-        <Icon className={cn("h-4 w-4", accent ? "text-piggy" : "text-mute")} />
-        <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
+    <div className="bg-ink-850 p-5">
+      <div className="eyebrow">{label}</div>
+      <div className="mt-3 flex items-baseline gap-1.5">
+        <span className={cn("text-2xl font-semibold tnum", accent ? "text-piggy" : "text-paper")}>{value}</span>
+        {unit && <span className="text-sm text-mute">{unit}</span>}
       </div>
-      <div className={cn("mt-3 flex items-baseline font-mono", big && "mt-4")}>{value}</div>
       {sub && <div className="mt-1.5 text-xs text-faint">{sub}</div>}
     </div>
   );

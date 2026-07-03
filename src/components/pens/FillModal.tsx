@@ -37,7 +37,7 @@ export function FillModal() {
         const url = await QRCode.toDataURL(d.depositAddress, {
           margin: 2,
           width: 220,
-          color: { dark: "#0B0A0F", light: "#FFFFFF" },
+          color: { dark: "#0A0B0D", light: "#FFFFFF" },
         });
         if (alive) setQr(url);
       })
@@ -56,8 +56,8 @@ export function FillModal() {
   return (
     <Modal open={!!target} onClose={onClose} labelledBy="fill-title">
       <div className="flex items-center gap-2">
-        <Wallet className="h-4.5 w-4.5 text-piggy" />
-        <h2 id="fill-title" className="font-display text-lg font-bold">
+        <Wallet className="h-4 w-4 text-piggy" />
+        <h2 id="fill-title" className="text-lg font-semibold">
           Add funds
         </h2>
       </div>

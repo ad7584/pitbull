@@ -1,30 +1,32 @@
 import { Link } from "react-router-dom";
+import { ArrowUpRight } from "lucide-react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { CopyButton } from "@/components/ui/CopyButton";
-import { ANSEM_MINT, COPY, PROGRAM_ID } from "@/lib/protocol";
+import { ANSEM_MINT, COPY } from "@/lib/protocol";
 import { shortKey } from "@/lib/format";
 
 export function Footer() {
   return (
-    <footer className="relative z-10 mt-24 border-t border-white/10">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+    <footer className="relative z-10 mt-16 border-t border-white/[0.08]">
+      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         <div className="flex flex-col gap-10 md:flex-row md:justify-between">
           <div className="max-w-sm">
             <Wordmark />
-            <p className="mt-4 text-sm leading-relaxed text-mute">
-              A social piggy bank on Solana. Small deposits become durable{" "}
-              <span className="text-paper">$ANSEM</span> liquidity — and it can only be cracked open once.
+            <p className="mt-4 text-[13px] leading-relaxed text-mute">
+              A custodial piggy bank on Solana. Small deposits pool into durable{" "}
+              <span className="text-paper">$ANSEM</span> liquidity — you earn the swap fees and withdraw your share
+              anytime.
             </p>
             <p className="mt-4 text-xs font-medium text-piggy-300">{COPY.floor}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-3">
             <FooterCol
               title="Product"
               links={[
-                { to: "/create", label: "Open a bank" },
-                { to: "/explore", label: "Explore" },
+                { to: "/dashboard", label: "Dashboard" },
                 { to: "/about", label: "How it works" },
+                { to: "/about#ansem", label: "$ANSEM" },
               ]}
             />
             <FooterCol
@@ -40,7 +42,7 @@ export function Footer() {
               links={[
                 { to: "/about#risks", label: "Risks" },
                 { to: "/terms", label: "Terms & Conditions" },
-                { to: "/about#risks", label: "Not a savings account" },
+                { to: "/about#safety", label: "Not a savings account" },
               ]}
             />
           </div>
@@ -48,21 +50,28 @@ export function Footer() {
 
         <div className="divider my-8" />
 
-        <div className="flex flex-col gap-3 text-xs text-faint sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 text-xs text-faint sm:flex-row sm:items-start sm:justify-between">
           <p className="max-w-2xl leading-relaxed">
-            Not financial advice. Not an endorsement of any token. Impermanent loss means a pen can return
-            less than was deposited. Verify every contract independently ·{" "}
+            Not financial advice, and not an endorsement of any token. This is a custodial product; impermanent loss
+            means a withdrawal can return less than was deposited. $ANSEM is a community token, not affiliated with
+            Ansem — verify every contract independently ·{" "}
             <Link to="/terms" className="text-mute underline underline-offset-2 transition hover:text-paper">
               Terms & Conditions
             </Link>
           </p>
-          <div className="flex flex-wrap items-center gap-2 font-mono">
-            <span className="chip">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip font-mono">
               $ANSEM {shortKey(ANSEM_MINT, 5)}
               <CopyButton value={ANSEM_MINT} label="" className="-mr-1 px-1 py-0" />
             </span>
-            <span className="chip">program {shortKey(PROGRAM_ID, 5)}</span>
-            <span className="chip">devnet · mock-pool</span>
+            <a
+              href="https://x.com/blknoiz06"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="chip transition hover:border-white/[0.16] hover:text-paper"
+            >
+              @blknoiz06 <ArrowUpRight className="h-3 w-3" />
+            </a>
           </div>
         </div>
       </div>
@@ -73,11 +82,11 @@ export function Footer() {
 function FooterCol({ title, links }: { title: string; links: { to: string; label: string }[] }) {
   return (
     <div>
-      <h4 className="font-display text-sm font-semibold text-paper">{title}</h4>
-      <ul className="mt-3 space-y-2">
+      <h4 className="text-[13px] font-semibold text-paper">{title}</h4>
+      <ul className="mt-3 space-y-2.5">
         {links.map((l) => (
           <li key={l.label}>
-            <Link to={l.to} className="text-sm text-mute transition hover:text-paper">
+            <Link to={l.to} className="text-[13px] text-mute transition hover:text-paper">
               {l.label}
             </Link>
           </li>

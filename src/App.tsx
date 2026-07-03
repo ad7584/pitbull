@@ -28,7 +28,7 @@ function ScrollManager() {
 
 export default function App() {
   return (
-    <div className="grain relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
       <Aurora />
       <Nav />
       <main className="flex-1">

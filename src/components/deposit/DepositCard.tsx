@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUpFromLine, Check, Loader2, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowUpFromLine, Check, Loader2, QrCode } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -9,10 +9,10 @@ import { LAMPORTS_PER_SOL } from "@/lib/protocol";
 import { fmtCompact, fmtSol } from "@/lib/format";
 
 /**
- * The real, custodial flow: the backend assigns this user a unique deposit
+ * The real custodial flow: the backend assigns this user a unique deposit
  * address; SOL sent there is auto-detected, credited to the shared ledger, and
- * swept into the keeper. Balances poll live from the backend. The owner can
- * withdraw their share to any address. Devnet.
+ * swept into the keeper. Balances poll live. The owner can withdraw their share
+ * to any address — verified against their Privy token.
  */
 export function DepositCard({ userId }: { userId: string }) {
   const [address, setAddress] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function DepositCard({ userId }: { userId: string }) {
         const dataUrl = await QRCode.toDataURL(d.depositAddress, {
           margin: 2,
           width: 240,
-          color: { dark: "#0B0A0F", light: "#FFFFFF" },
+          color: { dark: "#0A0B0D", light: "#FFFFFF" },
         });
         if (alive) setQr(dataUrl);
       })
@@ -66,7 +66,6 @@ export function DepositCard({ userId }: { userId: string }) {
     setWResult(null);
     try {
       const lamports = amount ? Math.round(parseFloat(amount) * LAMPORTS_PER_SOL) : undefined;
-      // owner-only: attach the Privy access token so the backend verifies it's us
       const authToken = (await authBridge.getAccessToken()) ?? undefined;
       const r = await api.withdraw({ userId, destination: dest.trim(), lamports, authToken });
       setWResult(r.sig);
@@ -83,30 +82,30 @@ export function DepositCard({ userId }: { userId: string }) {
 
   if (error) {
     return (
-      <div className="card flex items-center gap-2.5 p-4 text-sm text-amber-200/90">
-        <AlertTriangle className="h-4 w-4 text-amber-400" /> Couldn’t reach the deposit service. Try again shortly.
+      <div className="card flex items-center gap-2.5 p-4 text-sm text-amber">
+        <AlertTriangle className="h-4 w-4" /> Couldn’t reach the deposit service. Try again shortly.
       </div>
     );
   }
 
   return (
-    <div className="card overflow-hidden p-5 sm:p-6">
-      <div className="flex items-center justify-between">
+    <div className="card overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
-          <Wallet className="h-4.5 w-4.5 text-piggy" />
-          <h3 className="font-display text-lg font-bold">Your deposit address</h3>
+          <QrCode className="h-4 w-4 text-piggy" />
+          <h3 className="text-[15px] font-semibold text-paper">Your deposit address</h3>
         </div>
-        <span className="chip text-[11px]">devnet</span>
+        <span className="chip text-[11px]">Solana · mainnet</span>
       </div>
 
-      <div className="mt-4 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
-        <div className="mx-auto grid h-[168px] w-[168px] place-items-center rounded-2xl bg-white p-2 sm:mx-0">
+      <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:p-6">
+        <div className="mx-auto grid h-[164px] w-[164px] place-items-center rounded-xl bg-white p-2 sm:mx-0">
           {qr ? <img src={qr} alt="Deposit address QR" className="h-full w-full" /> : <Loader2 className="h-6 w-6 animate-spin text-ink-900" />}
         </div>
 
         <div>
-          <div className="text-xs font-medium text-mute">Send SOL here (devnet) — it credits automatically</div>
-          <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+          <div className="eyebrow">Send SOL here — it credits automatically</div>
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-ink-800 px-3 py-2.5">
             <span className="min-w-0 flex-1 truncate font-mono text-sm text-paper">{address ?? "…"}</span>
             {address && <CopyButton value={address} label="Copy" />}
           </div>
@@ -119,42 +118,43 @@ export function DepositCard({ userId }: { userId: string }) {
       </div>
 
       {/* withdraw — owner only */}
-      <div className="mt-5 border-t border-white/10 pt-5">
-        <div className="flex items-center gap-2 text-sm font-semibold">
+      <div className="border-t border-white/[0.07] px-5 py-5 sm:px-6">
+        <div className="flex items-center gap-2 text-sm font-semibold text-paper">
           <ArrowUpFromLine className="h-4 w-4 text-lime" /> Withdraw
-          <span className="text-xs font-normal text-faint">— up to {redeemableSol.toFixed(4)} SOL</span>
+          <span className="font-normal text-faint">— up to <span className="tnum">{redeemableSol.toFixed(4)}</span> SOL</span>
         </div>
-        <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             value={dest}
             onChange={(e) => setDest(e.target.value)}
             placeholder="Destination address"
-            className="h-11 flex-1 rounded-xl border border-white/10 bg-white/5 px-3.5 font-mono text-sm outline-none placeholder:text-faint focus:border-piggy/50"
+            className="input flex-1 font-mono"
           />
           <input
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
             inputMode="decimal"
             placeholder="SOL (blank = all)"
-            className="h-11 rounded-xl border border-white/10 bg-white/5 px-3.5 text-sm outline-none placeholder:text-faint focus:border-piggy/50 sm:w-40"
+            className="input sm:w-44"
           />
-          <Button variant="primary" onClick={withdraw} disabled={busy || !dest.trim() || redeemableSol <= 0}>
+          <Button variant="accent" onClick={withdraw} disabled={busy || !dest.trim() || redeemableSol <= 0}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpFromLine className="h-4 w-4" />} Withdraw
           </Button>
         </div>
 
         {wResult && (
-          <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-mint/25 bg-mint/10 px-3 py-2 text-xs text-mint">
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-mint/25 bg-mint/10 px-3 py-2 text-xs text-mint">
             <Check className="h-3.5 w-3.5" /> Sent · <span className="font-mono">{wResult.slice(0, 12)}…</span>
           </div>
         )}
         {wError && (
-          <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs text-danger">
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-xs text-danger">
             <AlertTriangle className="h-3.5 w-3.5" /> {wError}
           </div>
         )}
-        <p className="mt-2.5 text-[11px] leading-relaxed text-faint">
-          Balances update within ~15s of a confirmed transfer. Devnet prototype — no real funds.
+        <p className="mt-3 text-[11px] leading-relaxed text-faint">
+          Real SOL on Solana mainnet — send only what you intend to deposit. Balances update within ~15s of a
+          confirmed transfer. Only you can withdraw your balance.
         </p>
       </div>
     </div>
@@ -163,9 +163,9 @@ export function DepositCard({ userId }: { userId: string }) {
 
 function Stat({ label, value }: { label: string; value: string | null }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-faint">{label}</div>
-      <div className="mt-0.5 font-mono text-base font-semibold tnum text-lime">
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2.5">
+      <div className="eyebrow">{label}</div>
+      <div className="mt-1 font-mono text-base font-semibold tnum text-paper">
         {value ?? <Loader2 className="h-4 w-4 animate-spin text-mute" />}
       </div>
     </div>

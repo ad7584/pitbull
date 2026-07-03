@@ -27,7 +27,7 @@ export function Toasts() {
               exit={{ opacity: 0, x: 40, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
               onClick={() => dismiss(t.id)}
-              className={cn("glass-strong pointer-events-auto flex items-start gap-3 rounded-2xl border p-3.5 text-left", ring)}
+              className={cn("pointer-events-auto flex items-start gap-3 rounded-xl border bg-ink-850 p-3.5 text-left shadow-pop", ring)}
             >
               <Icon className={cn("mt-0.5 h-5 w-5 shrink-0", cls)} />
               <div className="min-w-0">

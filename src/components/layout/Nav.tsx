@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Loader2, LogOut, Menu, PiggyBank, Volume2, VolumeX, Wallet, X } from "lucide-react";
+import { ChevronDown, Loader2, LayoutDashboard, LogOut, Menu, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar } from "@/components/ui/Avatar";
@@ -13,7 +13,10 @@ import { authBridge } from "@/lib/authBridge";
 import { useWalletBalances } from "@/lib/useWalletBalances";
 import { cn } from "@/lib/cn";
 
-const LINKS = [{ to: "/about", label: "How it works", icon: PiggyBank }];
+const LINKS = [
+  { to: "/about", label: "How it works" },
+  { to: "/about#ansem", label: "$ANSEM" },
+];
 
 export function Nav() {
   const auth = usePit((s) => s.auth);
@@ -21,7 +24,6 @@ export function Nav() {
   const { openSignIn, soundOn, toggleSound } = useUI();
   const { balances, loading: balLoading } = useWalletBalances(auth.pubkey || undefined);
 
-  // real Privy in configured mode, mock modal otherwise
   const connect = () => (isConfigured ? authBridge.login() : openSignIn());
   const disconnect = () => (isConfigured ? authBridge.logout() : signOut());
   const nav = useNavigate();
@@ -54,25 +56,25 @@ export function Nav() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        scrolled ? "border-b border-white/10 bg-ink-950/70 backdrop-blur-xl" : "border-b border-transparent",
+        "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
+        scrolled ? "border-b border-white/[0.08] bg-ink-950/80 backdrop-blur-xl" : "border-b border-transparent",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="transition hover:opacity-90">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-8">
+        <Link to="/" className="transition-opacity hover:opacity-80">
           <Wordmark />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => {
-            const active = loc.pathname.startsWith(l.to);
+            const active = loc.pathname + loc.hash === l.to || (l.to === "/about" && loc.pathname === "/about" && !loc.hash);
             return (
               <Link
                 key={l.to}
                 to={l.to}
                 className={cn(
-                  "rounded-xl px-3.5 py-2 text-sm font-medium transition",
-                  active ? "text-paper" : "text-mute hover:text-paper hover:bg-white/5",
+                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  active ? "text-paper" : "text-mute hover:text-paper",
                 )}
               >
                 {l.label}
@@ -81,47 +83,37 @@ export function Nav() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMobileOpen((m) => !m)}
-            aria-label="Menu"
-            className="grid h-9 w-9 place-items-center rounded-xl text-mute transition hover:bg-white/5 hover:text-paper md:hidden"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+        <div className="flex items-center gap-1.5">
           <button
             onClick={toggleSound}
             aria-label={soundOn ? "Mute" : "Unmute"}
-            className="grid h-9 w-9 place-items-center rounded-xl text-mute transition hover:bg-white/5 hover:text-paper"
+            className="hidden h-9 w-9 place-items-center rounded-md text-faint transition hover:bg-white/[0.05] hover:text-mute sm:grid"
           >
-            {soundOn ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}
+            {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
 
           {auth.status === "guest" ? (
             <Button size="sm" variant="primary" onClick={connect}>
-              <Wallet className="h-4 w-4" />
               Connect
             </Button>
           ) : (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenu((m) => !m)}
-                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-2.5 transition hover:bg-white/10"
+                className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] py-1.5 pl-1.5 pr-2.5 transition hover:bg-white/[0.06]"
               >
-                <Avatar seed={auth.pubkey} label={auth.displayName} size={28} />
-                <span className="hidden text-sm font-medium sm:block">
-                  @{auth.handle}
-                </span>
+                <Avatar seed={auth.pubkey} label={auth.displayName} size={26} />
+                <span className="hidden text-sm font-medium sm:block">@{auth.handle}</span>
                 <ChevronDown className={cn("h-4 w-4 text-mute transition", menu && "rotate-180")} />
               </button>
               <AnimatePresence>
                 {menu && (
                   <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                    transition={{ duration: 0.16 }}
-                    className="card absolute right-0 mt-2 w-60 overflow-hidden p-1.5"
+                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                    transition={{ duration: 0.14 }}
+                    className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-white/[0.08] bg-ink-850 p-1.5 shadow-pop"
                   >
                     <div className="px-3 py-2.5">
                       <div className="text-sm font-semibold">@{auth.handle}</div>
@@ -134,13 +126,21 @@ export function Nav() {
                       </div>
                     )}
                     <div className="divider my-1" />
-                    <MenuItem icon={PiggyBank} label="Dashboard" onClick={() => nav("/dashboard")} />
+                    <MenuItem icon={LayoutDashboard} label="Dashboard" onClick={() => nav("/dashboard")} />
                     <MenuItem icon={LogOut} label="Sign out" onClick={disconnect} danger />
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           )}
+
+          <button
+            onClick={() => setMobileOpen((m) => !m)}
+            aria-label="Menu"
+            className="grid h-9 w-9 place-items-center rounded-md text-mute transition hover:bg-white/[0.05] hover:text-paper md:hidden"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
@@ -151,28 +151,23 @@ export function Nav() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden border-b border-white/10 bg-ink-950/90 backdrop-blur-xl md:hidden"
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden border-b border-white/[0.08] bg-ink-950/95 backdrop-blur-xl md:hidden"
           >
-            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
+            <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-3 sm:px-8">
               {LINKS.map((l) => (
                 <Link
                   key={l.to}
                   to={l.to}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-paper transition hover:bg-white/5"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-paper transition hover:bg-white/[0.05]"
                 >
-                  <l.icon className="h-4 w-4 text-mute" />
                   {l.label}
                 </Link>
               ))}
               <button
-                onClick={() => {
-                  if (auth.status === "guest") connect();
-                  else nav("/dashboard");
-                }}
-                className="mt-1 flex items-center gap-2.5 rounded-xl bg-piggy/15 px-3 py-3 text-sm font-semibold text-piggy-300 transition hover:bg-piggy/25"
+                onClick={() => (auth.status === "guest" ? connect() : nav("/dashboard"))}
+                className="mt-1 rounded-md bg-piggy px-3 py-2.5 text-left text-sm font-semibold text-white transition hover:bg-piggy-400"
               >
-                <PiggyBank className="h-4 w-4" />
                 {auth.status === "guest" ? "Connect" : "Dashboard"}
               </button>
             </div>
@@ -185,7 +180,7 @@ export function Nav() {
 
 function BalanceChip({ label, value, loading }: { label: string; value: string | null; loading: boolean }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-2.5 py-1.5">
       <div className="text-[10px] font-medium uppercase tracking-wide text-faint">{label}</div>
       <div className="mt-0.5 font-mono text-sm font-semibold tnum text-paper">
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-mute" /> : (value ?? "—")}
@@ -200,7 +195,7 @@ function MenuItem({
   onClick,
   danger,
 }: {
-  icon: typeof PiggyBank;
+  icon: typeof LogOut;
   label: string;
   onClick: () => void;
   danger?: boolean;
@@ -209,8 +204,8 @@ function MenuItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-        danger ? "text-danger hover:bg-danger/10" : "text-paper hover:bg-white/5",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium transition",
+        danger ? "text-danger hover:bg-danger/10" : "text-paper hover:bg-white/[0.05]",
       )}
     >
       <Icon className="h-4 w-4" />

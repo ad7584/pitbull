@@ -3,7 +3,7 @@ import { Check, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { PiggyMascot } from "@/components/brand/PiggyMascot";
+import { Bull } from "@/components/brand/Bull";
 import { usePit } from "@/lib/store";
 import { useUI } from "@/lib/ui";
 import { shortKey } from "@/lib/format";
@@ -50,10 +50,10 @@ export function SignInModal() {
   return (
     <Modal open={open} onClose={close} labelledBy="signin-title" className="max-w-[26rem]">
       <div className="flex flex-col items-center text-center">
-        <div className="mb-1">
-          <PiggyMascot mood={step === "ready" ? "happy" : "alert"} size={104} />
+        <div className="mb-2">
+          <Bull className="h-16 w-16" />
         </div>
-        <h2 id="signin-title" className="font-display text-2xl font-bold">
+        <h2 id="signin-title" className="text-2xl font-semibold">
           {step === "choose" && "Log in or sign up"}
           {step === "provisioning" && "Creating your wallet…"}
           {step === "ready" && "Wallet ready"}
