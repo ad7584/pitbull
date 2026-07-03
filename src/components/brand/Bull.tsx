@@ -7,14 +7,16 @@ import { cn } from "@/lib/cn";
  */
 export function Bull({
   className,
-  alt = "PIT-BULL",
+  alt = "MINOTAUR",
+  src = "/bull.png",
 }: {
   className?: string;
   alt?: string;
+  src?: string;
 }) {
   return (
     <img
-      src="/bull.png"
+      src={src}
       alt={alt}
       draggable={false}
       loading="eager"

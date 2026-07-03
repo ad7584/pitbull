@@ -64,7 +64,7 @@ export function SignInModal() {
             <motion.div key="choose" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
               <p className="mt-1.5 text-sm text-mute">
                 Continue with X — a <span className="text-paper">self-custodial</span> embedded wallet is created
-                underneath. No seed phrase, no extension. Only you can ever break your bank.
+                underneath. No seed phrase, no extension. Only you can ever withdraw your balance.
               </p>
 
               <div className="mt-6 w-full space-y-3 text-left">

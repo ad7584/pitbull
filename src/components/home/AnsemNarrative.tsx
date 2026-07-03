@@ -67,7 +67,7 @@ export function AnsemNarrative() {
 
         <p className="mt-4 text-[13px] leading-relaxed text-faint">
           <span className="text-mute">$ANSEM “The Black Bull”</span> is the community tribute token that grew out of
-          his persona — the bull he’s known for. PIT-BULL pools into that live market; it doesn’t issue the token.
+          his persona — the bull he’s known for. MINOTAUR pools into that live market; it doesn’t issue the token.
         </p>
 
         {/* honest disclosure */}

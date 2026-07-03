@@ -50,7 +50,7 @@ export default function About() {
           <div>
             <span className="eyebrow">The honest version</span>
             <h1 className="mt-3 text-balance text-4xl font-semibold leading-[1.05] sm:text-5xl">
-              A commitment device disguised as nostalgia.
+              A commitment device, not a dump bag.
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-[15px] leading-relaxed text-mute">
               Deposit small amounts of SOL, pool them into durable $ANSEM liquidity, earn the swap fees, and withdraw

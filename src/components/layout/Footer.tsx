@@ -13,9 +13,8 @@ export function Footer() {
           <div className="max-w-sm">
             <Wordmark />
             <p className="mt-4 text-[13px] leading-relaxed text-mute">
-              A custodial piggy bank on Solana. Small deposits pool into durable{" "}
-              <span className="text-paper">$ANSEM</span> liquidity — you earn the swap fees and withdraw your share
-              anytime.
+              Small SOL deposits, pooled into durable <span className="text-paper">$ANSEM</span> liquidity. You earn
+              the swap fees and withdraw your share anytime.
             </p>
             <p className="mt-4 text-xs font-medium text-piggy-300">{COPY.floor}</p>
           </div>

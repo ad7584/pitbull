@@ -19,12 +19,7 @@ export function Hero() {
   return (
     <section className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-8 pt-28 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pt-36">
       <div className="relative z-10 animate-fade-up">
-        <div className="chip">
-          <span className="h-1.5 w-1.5 rounded-full bg-lime" />
-          Solana · custodial $ANSEM liquidity
-        </div>
-
-        <h1 className="mt-5 text-balance text-4xl font-semibold leading-[1.05] sm:text-5xl lg:text-[3.35rem]">
+        <h1 className="text-balance text-4xl font-semibold leading-[1.05] sm:text-5xl lg:text-[3.35rem]">
           Turn loose SOL into durable <span className="text-piggy">$ANSEM</span> liquidity.
         </h1>
 
