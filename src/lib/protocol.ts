@@ -34,7 +34,7 @@ export const PUMPSWAP_PROGRAM_ID = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"
 export const ANSEM_MINT = "9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump";
 export const LP_FEE_BPS = 20; // 0.20% LP fee (0.25% total, 0.05% protocol)
 export const ANSEM_SYMBOL = "ANSEM";
-export const APP_HOST = "app.pitbull.fun";
+export const APP_HOST = "minotaursol.xyz";
 
 /** Tokens accepted by the deposit path. ANSEM is valued at pool spot. */
 export type DepositToken = "SOL" | "ANSEM";
